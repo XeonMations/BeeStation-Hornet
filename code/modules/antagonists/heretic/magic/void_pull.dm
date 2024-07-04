@@ -23,6 +23,8 @@
 	new /obj/effect/temp_visual/voidin(user.drop_location())
 	for(var/mob/living/livies in view(7, user) - user)
 
+		if(istype(livies, /mob/living/simple_animal/hostile/heretic_summon) || IS_HERETIC_OR_MONSTER(livies)) // HUMAN HERETIC MOB WITHOUT MIND HELP
+			continue
 		if(get_dist(user, livies) < 4)
 			livies.AdjustKnockdown(3 SECONDS)
 			livies.AdjustParalyzed(0.5 SECONDS)
