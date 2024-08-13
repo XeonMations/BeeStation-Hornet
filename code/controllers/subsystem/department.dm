@@ -16,6 +16,8 @@ SUBSYSTEM_DEF(department)
 	var/list/sorted_department_for_latejoin
 
 /datum/controller/subsystem/department/Initialize(timeofday)
+
+	// Initializes department datums in a list
 	department_datums = list()
 	department_assoc = list()
 
@@ -26,12 +28,14 @@ SUBSYSTEM_DEF(department)
 		if(each_dept.dept_id)
 			department_assoc[each_dept.dept_id] = each_dept
 
+	// Initializes department datums, puts those in a caching list as being sorted
 	var/datum/department_group/dummy_datum
-	dummy_datum = dummy_datum // be gone compile warning
+	dummy_datum = dummy_datum // be gone DMM compile warning
 	sorted_department_for_manifest = list()
 	sorted_department_for_latejoin = list()
 	init_and_sort_department(sorted_department_for_manifest, NAMEOF(dummy_datum, manifest_category_order))
 	init_and_sort_department(sorted_department_for_latejoin, NAMEOF(dummy_datum, pref_category_order))
+
 
 	// I don't like this here, but this globallist can't take proper values on its declaration.
 	GLOB.exp_jobsmap = list(
@@ -48,9 +52,15 @@ SUBSYSTEM_DEF(department)
 
 	return SS_INIT_SUCCESS
 
+/datum/controller/subsystem/department/Recover()
+	department_datums = SSdepartment.department_datums
+	department_assoc = SSdepartment.department_assoc
+	sorted_department_for_manifest = SSdepartment.sorted_department_for_manifest
+	sorted_department_for_latejoin = SSdepartment.sorted_department_for_latejoin
+
 /// Puts department datums into a list in a desired sort priority. Only called once in subsystem Initialize.
 /// * list_instance<list>: takes a list instance, to initialize and sort departments into this list
-/// * priority_varname<string/NAMEOF>: a hacky one since sorting code does the same thing.
+/// * priority_varname<string/NAMEOF>: takes a variable string as NAMEOF macro, for sorting list. Hacky, but sorting code does the same.
 /datum/controller/subsystem/department/proc/init_and_sort_department(list/list_instance, priority_varname)
 	if(isnull(list_instance))
 		CRASH("'list_instance' does not exist: target_var [priority_varname]")
@@ -81,7 +91,12 @@ SUBSYSTEM_DEF(department)
 
 /// WARNING: This always returns as a list.
 /// If your bitflag only gets a single department, it will return as a list.
+/// * bitflag<number/department_bitflag>: takes dedicated bitflag value(s) for a department
+///   * return <list>: returns all departments that match bitflag.
 /datum/controller/subsystem/department/proc/get_department_by_bitflag(bitflag)
+	if(isnull(department_datums))
+		CRASH("department subsystem is not yet initialized.")
+
 	var/return_result = list()
 	. = return_result
 
@@ -91,21 +106,34 @@ SUBSYSTEM_DEF(department)
 
 	return return_result
 
+/// Returns a department datum based on a given parameter.
+/// * id<string/department_name>: takes a department id/name
+///   * return <datum/department_group>: returns a single department datum of given id
 /datum/controller/subsystem/department/proc/get_department_by_dept_id(id)
+	if(isnull(department_assoc))
+		CRASH("department subsystem is not yet initialized.")
+
 	. = department_assoc[id]
 	if(!.)
 		CRASH("[id] isn't an existing department id.")
 	return department_assoc[id]
 
+/// Returns 'station jobs' of a department datum based on a given parameter.
+/// * id_or_list<list|string/department_name>: takes a department id/name. If it's given as a list, checks all department id in the list.
+///   * return <list/job_string>: returns a list of all jobs from desired departments. If you do 'list(COMMAND, MEDICAL)', you get all jobs from both.
 /datum/controller/subsystem/department/proc/get_jobs_by_dept_id(id_or_list)
-	if(!id_or_list)
-		stack_trace("proc has no id value")
-		return list()
+	if(isnull(department_assoc))
+		CRASH("department subsystem is not yet initialized.")
 
+	if(!id_or_list)
+		CRASH("proc has no id value")
+
+	// early return for string input
 	if(istext(id_or_list))
 		var/datum/department_group/dept = department_assoc[id_or_list]
-		return dept.jobs
+		return dept.jobs.Copy()
 
+	// checks all departments if it's a list
 	if(!islist(id_or_list))
 		id_or_list = list(id_or_list)
 	else if(islist(id_or_list?[1]))
@@ -115,7 +143,7 @@ SUBSYSTEM_DEF(department)
 	for(var/each in id_or_list)
 		var/datum/department_group/dept = department_assoc[each]
 		if(!dept)
-			message_admins("is not exist: [each]")
+			stack_trace("is not exist: [each]")
 			continue
 		if(!length(dept.jobs))
 			continue
@@ -131,7 +159,7 @@ SUBSYSTEM_DEF(department)
 	var/dept_id = NONE
 	var/dept_bitflag = null
 	var/dept_colour = null
-	var/dept_radio_channel = null
+	var/dept_radio_channel = null // currently not used
 	var/is_station = FALSE
 
 	// job related variables
