@@ -1093,6 +1093,12 @@ CREATION_TEST_IGNORE_SUBTYPES(/obj/item/circuitboard/machine/smartfridge)
 	transmit = !transmit
 	to_chat(user, "<span class='notice'>You [transmit ? "enable" : "disable"] the board's automatic disposal transmission.</span>")
 
+/obj/item/circuitboard/machine/kitchen_menu
+	name = "kitchen menu (Machine Board)"
+	icon_state = "service"
+	build_path = /obj/machinery/kitchen_menu
+	req_components = list(
+		/obj/item/stack/sheet/glass = 1)
 
 /obj/item/circuitboard/machine/gibber
 	name = "gibber (Machine Board)"
