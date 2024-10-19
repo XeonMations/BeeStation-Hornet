@@ -17,6 +17,8 @@
 
 	// The current state of the UI
 	var/state = STATE_VIEWING_MENU
+	//The menu items added to the menu by the chef.
+	var/list/menu_items = null
 
 /obj/machinery/kitchen_menu/ui_interact(mob/user, datum/tgui/ui)
 	ui = SStgui.try_update_ui(user, src, ui)
@@ -28,8 +30,12 @@
 /obj/machinery/kitchen_menu/ui_data(mob/user)
 	var/list/data = list()
 
-	data["authorized"] = allowed(user) //Do we have the chef's authorization to add or remove menu items to the menu?
+	data["authorized"] = FALSE
+	if(allowed(user)) //Do we have the chef's authorization to add or remove menu items to the menu?
+		data["authorized"] = TRUE
 	data["page"] = state
+	data["menu_items"] = menu_items
+
 	return data
 
 /obj/machinery/kitchen_menu/ui_act(action, list/params)
@@ -41,6 +47,16 @@
 
 	switch(action)
 		if("add_menu_item")
+			if(!allowed(usr))
+				return
+			menu_items += params["menu_items"]
+			playsound(src, "terminal_type", 50, FALSE)
+			. = TRUE
+		if("remove_menu_item")
+			if(!allowed(usr))
+				return
+			menu_items -= params["menu_items"]
+			playsound(src, "terminal_type", 50, FALSE)
 			. = TRUE
 		if("setState")
 			if(!allowed(usr))
@@ -50,3 +66,4 @@
 			state = params["state"]
 			playsound(src, "terminal_type", 50, FALSE)
 			. = TRUE
+

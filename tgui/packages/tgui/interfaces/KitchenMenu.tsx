@@ -55,12 +55,14 @@ export const ChefKitchenMenuContent = (_, context) => {
 
 const PageMenuCustomization = (props, context) => {
   const { act, data } = useBackend(context);
+  const { authorized, page } = data;
 
   return <Window>Customization</Window>;
 };
 
 const PageMenuView = (props, context) => {
   const { act, data } = useBackend(context);
+  const { authorized, page } = data;
 
   return <Window>View</Window>;
 };
