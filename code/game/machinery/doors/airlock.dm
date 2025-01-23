@@ -716,6 +716,9 @@
 		if("closing")
 			update_icon(AIRLOCK_CLOSING)
 		if("deny")
+			if(!COOLDOWN_FINISHED(src, next_deny))
+				return
+			COOLDOWN_START(src, next_deny, 0.5 SECONDS)
 			if(!machine_stat)
 				update_icon(AIRLOCK_DENY)
 				playsound(src,doorDeni,50,0,3)

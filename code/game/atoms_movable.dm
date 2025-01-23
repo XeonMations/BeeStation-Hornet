@@ -656,23 +656,17 @@
  **/
 /atom/movable/proc/Moved(atom/old_loc, movement_dir, forced = FALSE, list/old_locs)
 	SHOULD_CALL_PARENT(TRUE)
+	SEND_SIGNAL(src, COMSIG_MOVABLE_MOVED, old_loc, movement_dir, forced, old_locs)
 
-	if(old_loc)
+	if(OldLoc == loc)
 		var/turf/old_turf = get_turf(old_loc)
 		var/turf/new_turf = get_turf(src)
 		if(old_turf && new_turf && old_turf.z != new_turf.z)
 			onTransitZ(old_turf.z, new_turf.z)
+	else
+		SEND_SIGNAL(src, COMSIG_MOVABLE_MOVED_TURF, OldLoc, Dir)
 	if (!inertia_moving)
 		newtonian_move(movement_dir)
-
-	move_stacks--
-	if(move_stacks > 0) //we want only the first Moved() call in the stack to send this signal, all the other ones have an incorrect old_loc
-		return
-	if(move_stacks < 0)
-		stack_trace("move_stacks is negative in Moved()!")
-		move_stacks = 0 //setting it to 0 so that we dont get every movable with negative move_stacks runtiming on every movement
-
-	SEND_SIGNAL(src, COMSIG_MOVABLE_MOVED, old_loc, movement_dir, forced, old_locs)
 
 	// Z-Mimic hook
 	if (bound_overlay)
@@ -706,10 +700,9 @@
 // Make sure you know what you're doing if you call this, this is intended to only be called by byond directly.
 // You probably want CanPass()
 /atom/movable/Cross(atom/movable/AM)
-	. = TRUE
 	SEND_SIGNAL(src, COMSIG_MOVABLE_CROSS, AM)
 	SEND_SIGNAL(AM, COMSIG_MOVABLE_CROSS_OVER, src)
-	return CanPass(AM, get_dir(src, AM))
+	return CanPass(AM, get_dir(src, AM), TRUE)
 
 ///default byond proc that is deprecated for us in lieu of signals. do not call
 /atom/movable/Crossed(atom/movable/AM, oldloc)
@@ -751,8 +744,6 @@
 	CRASH("/atom/movable/Uncrossed() was called")
 
 /atom/movable/Bump(atom/A)
-	if(!A)
-		CRASH("Bump was called with no argument.")
 	SEND_SIGNAL(src, COMSIG_MOVABLE_BUMP, A)
 	. = ..()
 	if(!QDELETED(throwing))
@@ -762,65 +753,148 @@
 			return
 	A.Bumped(src)
 
+/atom/movable/setDir(direct)
+	var/old_dir = dir
+	. = ..()
+	update_bounds(olddir=old_dir, newdir=direct)
+
+/atom/movable/true_x()
+	. = ..()
+	. += step_x
+
+/atom/movable/true_y()
+	. = ..()
+	. += step_y
+
+/**
+  * Updates bounds of the object depending on its brotation define
+  *
+  * Called on setDir and updates the bounds accordingly
+  * Unless you have some really weird rotation try to implement a generic version of your rotation here and make a flag for it
+  * Arguments:
+  * * olddir - The old direction
+  * * newdir - The new direction
+  */
+/atom/movable/proc/update_bounds(olddir, newdir)
+	SEND_SIGNAL(src, COMSIG_MOVABLE_UPDATE_BOUNDS, args)
+
+	if(newdir == olddir) // the direction hasn't changed
+		return
+	if(bound_width == bound_height && !bound_x && !bound_y) // We're a square and have no offset
+		return
+
+	if(brotation & BOUNDS_SIMPLE_ROTATE)
+		var/rot = SIMPLIFY_DEGREES(dir2angle(newdir)-dir2angle(olddir))
+		for(var/i in 90 to rot step 90)
+			var/tempwidth = bound_width
+			var/eastgap = CEILING(bound_width, 32) - bound_width - bound_x
+
+			bound_width = bound_height
+			bound_height = tempwidth
+
+			bound_x = bound_y
+			bound_y = eastgap
+
 ///Sets the anchored var and returns if it was sucessfully changed or not.
 /atom/movable/proc/set_anchored(anchorvalue)
 	SHOULD_CALL_PARENT(TRUE)
 	if(anchored == anchorvalue)
 		return
 	. = anchored
+	set_sidestep(!anchored) // can't sidestep when anchored, can sidestep when not anchored
 	anchored = anchorvalue
+	set_sidestep(!anchored)
 	SEND_SIGNAL(src, COMSIG_MOVABLE_SET_ANCHORED, anchorvalue)
 
-/atom/movable/proc/forceMove(atom/destination)
+/atom/movable/proc/forceMove(atom/destination, _step_x=0, _step_y=0)
 	. = FALSE
-	if(destination == null) //destination destroyed due to explosion
-		return
-
+	if(islist(destination))
+		if(length(destination) > 2)
+			_step_x  = destination[2]
+			_step_y = destination[3]
+		destination = get_turf(destination[1])
 	if(destination)
-		. = doMove(destination)
+		. = doMove(destination, _step_x, _step_y)
 	else
 		CRASH("No valid destination passed into forceMove")
+
+/// sets the step_ offsets to AM, or if AM is null sets the step_ values to the offsets
+/**
+  * sets the step_ offsets to that of AM, or if AM is null sets the step_ values to the offsets
+  *
+  * Pixel counterpart of forceMove
+  * should be used when only wanting to set the step values
+  * can either pass a movable you want to copy step values from
+  * leave AM null and input step_ values manually
+  * Arguments:
+  * * AM - The movable we want to copy step_ values from
+  * * _step_x - Alternative step_x value when AM is null
+  * * _step_y - Alternative step_y value when AM is null
+  */
+/atom/movable/proc/forceStep(atom/movable/AM=null, _step_x=0, _step_y=0)
+	if(!AM)
+		step_x = _step_x
+		step_y = _step_y
+	else
+		step_x = AM.step_x
+		step_y = AM.step_y
 
 /atom/movable/proc/moveToNullspace()
 	return doMove(null)
 
-/atom/movable/proc/doMove(atom/destination)
+/atom/movable/proc/doMove(atom/destination, _step_x=0, _step_y=0)
 	. = FALSE
-	move_stacks++
+		if(destination == loc) // Force move in place?
+		Moved(loc, NONE, TRUE)
+		return TRUE
+
 	var/atom/oldloc = loc
-	if(destination)
-		if(pulledby)
-			pulledby.stop_pulling()
-		var/same_loc = oldloc == destination
-		var/area/old_area = get_area(oldloc)
-		var/area/destarea = get_area(destination)
+	var/area/oldarea = get_area(oldloc)
+	var/area/destarea = get_area(destination)
+	var/list/old_bounds = obounds()
 
-		moving_diagonally = 0
+	loc = destination
+	step_x = _step_x
+	step_y = _step_y
 
-		loc = destination
+	if(oldloc && oldloc != loc)
+		oldloc.Exited(src, destination)
+		if(oldarea && oldarea != destarea)
+			oldarea.Exited(src, destination)
 
-		if(!same_loc)
-			if(oldloc)
-				oldloc.Exited(src, destination)
-				if(old_area && old_area != destarea)
-					old_area.Exited(src, destination)
-			destination.Entered(src, oldloc)
-			if(destarea && old_area != destarea)
-				destarea.Entered(src, old_area)
+	var/list/new_bounds = obounds()
 
-		. = TRUE
+	for(var/i in old_bounds)
+		if(i in new_bounds)
+			continue
+		var/atom/thing = i
+		thing.Uncrossed(src)
 
-	//If no destination, move the atom into nullspace (don't do this unless you know what you're doing)
-	else
-		. = TRUE
-		loc = null
-		if (oldloc)
-			var/area/old_area = get_area(oldloc)
-			oldloc.Exited(src, null)
-			if(old_area)
-				old_area.Exited(src, null)
+	if(pulledby || pulling)
+		check_pulling()
+
+	if(!loc) // I hope you know what you're doing
+		return TRUE
+
+	var/turf/oldturf = get_turf(oldloc)
+	var/turf/destturf = get_turf(destination)
+	var/oldz = (oldturf ? oldturf.z : null)
+	var/newz = (destturf ? destturf.z : null)
+	if(oldz != newz)
+		onTransitZ(oldz, newz)
+
+	destination.Entered(src, oldloc)
+	if(destarea && oldarea != destarea)
+		destarea.Entered(src, oldloc)
+
+	for(var/i in new_bounds)
+		if(i in old_bounds)
+			continue
+		var/atom/thing = i
+		thing.Crossed(src, oldloc)
 
 	Moved(oldloc, NONE, TRUE)
+	return TRUE
 
 //Called whenever an object moves and by mobs when they attempt to move themselves through space
 //And when an object or action applies a force on src, see newtonian_move() below
@@ -867,15 +941,15 @@
 
 /atom/movable/hitby(atom/movable/AM, skipcatch, hitpush = TRUE, blocked, datum/thrownthing/throwingdatum)
 	if(!anchored && hitpush && (!throwingdatum || (throwingdatum.force >= (move_resist * MOVE_FORCE_PUSH_RATIO))))
-		step(src, AM.dir)
+		step(src, AM.dir, 16)
 	..(AM, skipcatch, hitpush, blocked, throwingdatum)
 
-/atom/movable/proc/safe_throw_at(atom/target, range, speed, mob/thrower, spin = TRUE, diagonals_first = FALSE, datum/callback/callback, force = MOVE_FORCE_STRONG)
+/atom/movable/proc/safe_throw_at(atom/target, range, speed, mob/thrower, spin = TRUE, diagonals_first = FALSE, datum/callback/callback, force = MOVE_FORCE_STRONG, params)
 	if((force < (move_resist * MOVE_FORCE_THROW_RATIO)) || (move_resist == INFINITY))
 		return
-	return throw_at(target, range, speed, thrower, spin, diagonals_first, callback, force)
+	return throw_at(target, range, speed, thrower, spin, diagonals_first, callback, force, TRUE, params)
 
-/atom/movable/proc/throw_at(atom/target, range, speed, mob/thrower, spin = TRUE, diagonals_first = FALSE, datum/callback/callback, force = MOVE_FORCE_STRONG, quickstart = TRUE) //If this returns FALSE then callback will not be called.
+/atom/movable/proc/throw_at(atom/target, range, speed, mob/thrower, spin = TRUE, diagonals_first = FALSE, datum/callback/callback, force = MOVE_FORCE_STRONG, quickstart = TRUE, params) //If this returns FALSE then callback will not be called.
 	. = FALSE
 
 	if(QDELETED(src))
@@ -928,7 +1002,9 @@
 		target_zone = thrower.get_combat_bodyzone(target)
 
 	var/datum/thrownthing/TT = new(src, target, get_dir(src, target), range, speed, thrower, diagonals_first, force, callback, target_zone)
-
+	if(thrower && params)
+		var/list/calculated = calculate_projectile_angle_and_pixel_offsets(thrower, params)
+		TT.angle = calculated[1]
 	var/dist_x = abs(target.x - src.x)
 	var/dist_y = abs(target.y - src.y)
 	var/dx = (target.x > src.x) ? EAST : WEST
@@ -956,6 +1032,8 @@
 	movement_type |= THROWN
 
 	throwing = TT
+	if(TT.hitcheck())
+		return
 	if(spin)
 		SpinAnimation(5, 1)
 
@@ -967,11 +1045,11 @@
 	if(quickstart)
 		TT.tick()
 
-/atom/movable/proc/handle_buckled_mob_movement(newloc, direct, glide_size_override)
+/atom/movable/proc/handle_buckled_mob_movement(newloc, direct, _step_x, _step_y)
 	for(var/m in buckled_mobs)
 		var/mob/living/buckled_mob = m
-		if(!buckled_mob.Move(newloc, direct, glide_size_override))
-			doMove(buckled_mob.loc) //forceMove breaks buckles on stairs, use doMove
+		if(!buckled_mob.Move(newloc, direct, _step_x, _step_y))
+			doMove(buckled_mob.loc, step_x, step_y) //forceMove breaks buckles on stairs, use doMove
 			last_move = buckled_mob.last_move
 			last_move_time = world.time
 			return FALSE
@@ -1012,8 +1090,7 @@
 	return
 
 /atom/movable/proc/get_spacemove_backup()
-	var/atom/movable/dense_object_backup
-	for(var/A in orange(1, get_turf(src)))
+	for(var/A in obounds(src, 16))
 		if(isarea(A))
 			continue
 		else if(isturf(A))
@@ -1024,11 +1101,9 @@
 		else
 			var/atom/movable/AM = A
 			if(AM.density || !AM.CanPass(src, get_dir(src, AM)))
-				if(AM.anchored)
-					return AM
-				dense_object_backup = AM
-				break
-	. = dense_object_backup
+				if(AM.inertia_dir)
+					continue
+				return AM
 
 //Called when something resists while this atom is its loc
 /atom/movable/proc/container_resist(mob/living/user)
@@ -1245,6 +1320,8 @@
 
 /* End language procs */
 
+/atom/movable/drop_location()
+	return list(get_turf(src), step_x, step_y)
 
 //Returns an atom's power cell, if it has one. Overload for individual items.
 /atom/movable/proc/get_cell()
@@ -1321,23 +1398,31 @@
 		return
 	if(!istype(loc, /turf))
 		return
-
+	var/stepx = 0
+	var/stepy = 0
+	if(ismovable(target))
+		var/atom/movable/AM = target
+		stepx = AM.step_x
+		stepy = AM.step_y
 	var/turf/current_turf = get_turf(src)
 	var/direction = get_dir(moving_from, current_turf)
 	var/from_x = moving_from.base_pixel_x
 	var/from_y = moving_from.base_pixel_y
 
 	if(direction & NORTH)
-		from_y -= 32
+		from_y -= 32 + stepy
 	else if(direction & SOUTH)
-		from_y += 32
+		from_y += 32 - stepy
 	if(direction & EAST)
-		from_x -= 32
+		from_x -= 32 + stepx
 	else if(direction & WEST)
-		from_x += 32
+		from_x += 32 - stepx
 	if(!direction)
-		from_y += 10
-		from_x += 6 * (prob(50) ? 1 : -1) //6 to the right or left, helps break up the straight upward move
+		if(!(stepx || stepy))
+			to_y = 8
+		else
+			to_x = stepx
+			to_y = stepy
 
 	//We're moving from these chords to our current ones
 	var/old_x = pixel_x

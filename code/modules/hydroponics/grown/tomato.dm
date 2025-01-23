@@ -49,7 +49,7 @@
 	distill_reagent = /datum/reagent/consumable/ethanol/bloody_mary
 	discovery_points = 300
 
-/obj/item/food/grown/tomato/blood/throw_at(atom/target, range, speed, mob/thrower, spin=1, diagonals_first = 0, datum/callback/callback, force, quickstart = TRUE)
+/obj/item/food/grown/tomato/blood/throw_at(atom/target, range, speed, mob/thrower, spin=1, diagonals_first = 0, datum/callback/callback, force, quickstart = TRUE, params)
 	if(istype(thrower) && thrower.ckey)
 		thrower.investigate_log("has thrown bloodtomatoes at [AREACOORD(thrower)].", INVESTIGATE_BOTANY)
 	. = ..()

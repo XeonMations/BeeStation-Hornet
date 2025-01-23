@@ -18,6 +18,10 @@
 	//We don't use area power, we always use the cell
 	use_power = NO_POWER_USE
 	interacts_with_air = TRUE
+	bound_x = 12
+	bound_y = 7
+	bound_width = 9
+	bound_height = 22
 
 	///The cell we spawn with
 	var/obj/item/stock_parts/cell/cell = null

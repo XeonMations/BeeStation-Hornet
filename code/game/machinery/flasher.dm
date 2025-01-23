@@ -172,7 +172,7 @@ CREATION_TEST_IGNORE_SUBTYPES(/obj/machinery/flasher)
 
 	if(istype(AM, /mob/living/carbon))
 		var/mob/living/carbon/M = AM
-		if (M.m_intent != MOVE_INTENT_WALK && anchored)
+		if (M.m_intent != (MOVE_INTENT_WALK || MOVE_INTENT_CRAWL) && anchored)
 			flash()
 
 /obj/machinery/flasher/portable/attackby(obj/item/W, mob/user, params)

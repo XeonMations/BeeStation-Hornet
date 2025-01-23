@@ -268,9 +268,9 @@
 /mob/camera/ai_eye/remote
 	name = "Inactive Camera Eye"
 	ai_detector_visible = FALSE
-	var/sprint = 10
+	var/sprint = 0
 	var/cooldown = 0
-	var/acceleration = 0
+	var/acceleration = 0.5
 	var/mob/living/eye_user = null
 	var/obj/machinery/origin
 	var/eye_initialized = 0
@@ -295,11 +295,11 @@
 		return eye_user.client
 	return null
 
-/mob/camera/ai_eye/remote/setLoc(destination)
+/mob/camera/ai_eye/remote/setLoc(atom/destination, force_update, _pixel_x, _pixel_y)
 	if(eye_user)
 		destination = get_turf(destination)
 		if (destination)
-			abstract_move(destination)
+			abstract_move(destination, _pixel_x, _pixel_y)
 		else
 			moveToNullspace()
 
@@ -332,7 +332,10 @@
 	if(acceleration)
 		sprint = min(sprint + 0.5, max_sprint)
 	else
-		sprint = initial
+		sprint += acceleration
+	cooldown = world.timeofday + 3
+
+	step(src, direction, min(round(step_size + sprint), max(world.icon_size, step_size)))
 
 /datum/action/innate/camera_off
 	name = "End Camera View"

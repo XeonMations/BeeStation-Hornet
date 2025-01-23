@@ -5,6 +5,12 @@
 	icon_state = "left"
 	layer = ABOVE_WINDOW_LAYER
 	closingLayer = ABOVE_WINDOW_LAYER
+
+	bound_height = 7
+	bound_width = 32
+	bound_x = 0
+	bound_y = 25
+
 	resistance_flags = ACID_PROOF
 	var/base_state = "left"
 	max_integrity = 150 //If you change this, consider changing ../door/window/brigdoor/ max_integrity at the bottom of this .dm file
@@ -128,26 +134,13 @@ CREATION_TEST_IGNORE_SUBTYPES(/obj/machinery/door/window)
 
 /obj/machinery/door/window/CanAllowThrough(atom/movable/mover, border_dir)
 	. = ..()
-	if(.)
-		return
-
-	if(border_dir == dir)
-		return FALSE
-
-	if(istype(mover, /obj/structure/window))
-		var/obj/structure/window/moved_window = mover
-		return valid_window_location(loc, moved_window.dir, is_fulltile = moved_window.fulltile)
-
-	if(istype(mover, /obj/structure/windoor_assembly) || istype(mover, /obj/machinery/door/window))
-		return valid_window_location(loc, mover.dir, is_fulltile = FALSE)
-
-	return TRUE
+	if(istype(mover) && (mover.pass_flags & PASSGLASS))
+		return TRUE
 
 /obj/machinery/door/window/CanAtmosPass(turf/T)
-	if(get_dir(loc, T) == dir)
-		return !density
-	else
-		return TRUE
+	. = ..()
+	if(anchored && density && get_dir(loc, T) == dir)
+		return FALSE
 
 //used in the AStar algorithm to determinate if the turf the door is on is passable
 /obj/machinery/door/window/CanAStarPass(obj/item/card/id/ID, to_dir)

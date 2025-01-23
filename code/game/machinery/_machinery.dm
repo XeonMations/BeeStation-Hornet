@@ -794,8 +794,9 @@ Class Procs:
 	for (var/i in 1 to 32)
 		. += hex2num(md5[i])
 	. = . % 9
-	AM.pixel_x = -8 + ((.%3)*8)
-	AM.pixel_y = -8 + (round( . / 3)*8)
+	var/_step_x = -8 + ((.%3)*8)
+	var/_step_y = -8 + (round( . / 3)*8)
+	AM.forceStep(null, _step_x, _step_y)
 
 /obj/machinery/proc/play_click_sound(var/custom_clicksound)
 	if((custom_clicksound ||= clicksound) && world.time > next_clicksound)
