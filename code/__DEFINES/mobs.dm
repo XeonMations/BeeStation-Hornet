@@ -16,6 +16,7 @@
 //movement intent defines for the m_intent var
 #define MOVE_INTENT_WALK "walk"
 #define MOVE_INTENT_RUN  "run"
+#define MOVE_INTENT_CRAWL "crawl"
 
 // Bleed rates
 // See blood.dm for calculations

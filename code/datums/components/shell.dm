@@ -273,7 +273,7 @@
 	))
 	if(attached_circuit.loc == parent)
 		var/atom/parent_atom = parent
-		attached_circuit.forceMove(parent_atom.drop_location())
+		attached_circuit.forceMove(parent_atom.drop_location()[1])
 
 	for(var/obj/item/circuit_component/to_remove as anything in unremovable_circuit_components)
 		attached_circuit.remove_component(to_remove)

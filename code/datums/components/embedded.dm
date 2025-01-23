@@ -164,7 +164,7 @@
 
 	var/mob/living/carbon/victim = parent
 	var/chance = jostle_chance
-	if(victim.m_intent == MOVE_INTENT_WALK || victim.body_position == LYING_DOWN)
+	if(victim.m_intent == MOVE_INTENT_WALK || victim.m_intent == MOVE_INTENT_CRAWL || !(victim.mobility_flags & MOBILITY_STAND))
 		chance *= 0.5
 
 	if(harmful && prob(chance))

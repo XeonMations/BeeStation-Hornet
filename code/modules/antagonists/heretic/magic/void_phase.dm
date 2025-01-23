@@ -26,7 +26,7 @@
 	playsound(user,'sound/magic/voidblink.ogg',100)
 	playsound(targeted_turf,'sound/magic/voidblink.ogg',100)
 
-	new /obj/effect/temp_visual/voidin(user.drop_location())
+	new /obj/effect/temp_visual/voidin(user.drop_location()[1])
 	new /obj/effect/temp_visual/voidout(targeted_turf)
 
 	for(var/mob/living/living_mob in range(1, user) - user)

@@ -249,7 +249,8 @@
 	message.pixel_y = bound_height - MESSAGE_FADE_PIXEL_Y
 	message.maptext_width = CHAT_MESSAGE_WIDTH
 	message.maptext_height = mheight
-	message.maptext_x = (CHAT_MESSAGE_WIDTH - bound_width) * -0.5
+	message.maptext_x = (CHAT_MESSAGE_WIDTH - (owner.bound_width + owner.bound_x + 5)) * -0.5
+	message.maptext_y = owner.bound_height + owner.bound_y + 5
 	if(extra_classes.Find("italics"))
 		message.color = "#CCCCCC"
 	message.maptext = MAPTEXT(complete_text)

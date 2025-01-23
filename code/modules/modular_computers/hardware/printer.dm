@@ -30,7 +30,7 @@
 	if(!can_print())
 		return FALSE
 
-	var/obj/item/paper/printed_paper = new/obj/item/paper(holder.drop_location())
+	var/obj/item/paper/printed_paper = new/obj/item/paper(holder.drop_location()[1])
 
 	// Damaged printer causes the resulting paper to be somewhat harder to read.
 	if(damage > damage_malfunction)
@@ -50,7 +50,7 @@
 	if(!ispath(type_to_print, /obj))
 		return FALSE
 
-	var/obj/O = new type_to_print(holder.drop_location())
+	var/obj/O = new type_to_print(holder.drop_location()[1])
 
 	if(istype(O, /obj/item/paper))
 		var/obj/item/paper/P = O

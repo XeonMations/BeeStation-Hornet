@@ -69,6 +69,7 @@
 		return
 	next_click = world.time + 1
 
+	client?.mouseParams = params
 	if(check_click_intercept(params,A))
 		return
 
@@ -117,7 +118,7 @@
 		UnarmedAttack(A)
 		return
 
-	if(throw_mode && throw_item(A))
+	if(throw_mode && throw_item(A, params))
 		changeNext_move(CLICK_CD_THROW)
 		return
 
@@ -191,14 +192,17 @@
 		--depth
 
 		for(var/atom/target in checking)  // will filter out nulls
-			if(closed[target] || isarea(target))  // avoid infinity situations
+			if(closed[target]) // avoid infinity situations
+				continue
+
+			closed[target] = TRUE
+
+			if(isarea(target))
 				continue
 
 			if(isturf(target) || isturf(target.loc) || HasDirectAccess(target) || (ismovable(target) && target.flags_1 & IS_ONTOP_1)) //Directly accessible atoms
 				if(Adjacent(target) || (tool && CheckToolReach(src, target, tool.reach))) //Adjacent or reaching attacks
 					return TRUE
-
-			closed[target] = TRUE
 
 			if (!target.loc)
 				continue

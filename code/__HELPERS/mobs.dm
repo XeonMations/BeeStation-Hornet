@@ -301,6 +301,8 @@ GLOBAL_LIST_EMPTY(species_list)
 
 	var/atom/user_loc = user.loc
 	var/atom/target_loc = target?.loc
+	var/Ustep_x = user.step_x
+	var/Ustep_y = user.step_y
 
 	var/drifting = FALSE
 	if(SSmove_manager.processing_on(user, SSspacedrift))
@@ -335,12 +337,16 @@ GLOBAL_LIST_EMPTY(species_list)
 		if(drifting && SSmove_manager.processing_on(user, SSspacedrift))
 			drifting = FALSE
 			user_loc = user.loc
+			Ustep_x = user.step_x
+			Ustep_y = user.step_y
 
 		if(QDELETED(user) \
 			|| (!(timed_action_flags & IGNORE_USER_LOC_CHANGE) && !drifting && user.loc != user_loc) \
 			|| (!(timed_action_flags & IGNORE_HELD_ITEM) && user.get_active_held_item() != holding) \
 			|| (!(timed_action_flags & IGNORE_INCAPACITATED) && HAS_TRAIT(user, TRAIT_INCAPACITATED)) \
-			|| (extra_checks && !extra_checks.Invoke()))
+			|| (extra_checks && !extra_checks.Invoke()) \
+			|| (user.step_x != Ustep_x) \
+			|| (user.step_y != Ustep_y))
 			. = FALSE
 			break
 

@@ -274,7 +274,7 @@ CREATION_TEST_IGNORE_SUBTYPES(/obj/item/stack)
 					return
 				T.PlaceOnTop(R.result_type, flags = CHANGETURF_INHERIT_AIR)
 			else
-				O = new R.result_type(usr.drop_location())
+				O = new R.result_type(usr.drop_location()[1])
 			if(O)
 				O.setDir(usr.dir)
 			use(R.req_amount * multiplier)
@@ -516,7 +516,7 @@ CREATION_TEST_IGNORE_SUBTYPES(/obj/item/stack)
 	F.copy_evidences(src)
 	if(user)
 		if(!user.put_in_hands(F, merge_stacks = FALSE))
-			F.forceMove(user.drop_location())
+			F.forceMove(user.drop_location()[1])
 		add_fingerprint(user)
 		F.add_fingerprint(user)
 

@@ -469,7 +469,7 @@ GLOBAL_VAR_INIT(floor_cluwnes, 0)
 	sac_target.do_jitter_animation(100)
 
 	if(sac_target.legcuffed)
-		sac_target.legcuffed.forceMove(sac_target.drop_location())
+		sac_target.legcuffed.forceMove(sac_target.drop_location()[1])
 		sac_target.legcuffed.dropped(sac_target)
 		sac_target.legcuffed = null
 		sac_target.update_inv_legcuffed()

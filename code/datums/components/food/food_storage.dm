@@ -31,7 +31,7 @@
 
 /datum/component/food_storage/Destroy(force, silent)
 	if(stored_item)
-		stored_item.forceMove(stored_item.drop_location())
+		stored_item.forceMove(stored_item.drop_location()[1])
 		stored_item.dropped()
 		stored_item = null
 	. = ..()
@@ -167,7 +167,7 @@
 	if(prob(good_chance_of_discovery)) //finding the item, without biting it
 		discovered = TRUE
 		to_chat(target, "<span class='warning'>It feels like there's something in \the [parent]...!</span>")
-		
+
 	else if(prob(bad_chance_of_discovery)) //finding the item, BY biting it
 		user.log_message("[key_name(user)] just fed [key_name(target)] a/an [stored_item] which was hidden in [parent] at [AREACOORD(target)]", LOG_ATTACK)
 		discovered = stored_item.on_accidental_consumption(target, user, parent)

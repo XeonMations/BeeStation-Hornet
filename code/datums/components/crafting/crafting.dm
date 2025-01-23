@@ -219,7 +219,7 @@
 						result.pixel_x = rand(-4, 4)
 						result.pixel_y = rand(-4, 4)
 		else
-			result.forceMove(user.drop_location())
+			result.forceMove(user.drop_location()[1])
 		to_chat(user, "<span class='notice'>[TR.name] constructed.</span>")
 		TR.on_craft_completion(user, result)
 	else

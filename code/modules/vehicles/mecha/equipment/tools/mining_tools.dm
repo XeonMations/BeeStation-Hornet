@@ -135,7 +135,7 @@
 
 		//blood splatters and sparks
 		if(issilicon(target)  || isbot(target) || isswarmer(target) || IS_ROBOTIC_LIMB(target_part))
-			do_sparks(rand(1, 3), FALSE, target.drop_location())
+			do_sparks(rand(1, 3), FALSE, target.drop_location()[1])
 		else
 			var/splatter_dir = get_dir(chassis, target)
 

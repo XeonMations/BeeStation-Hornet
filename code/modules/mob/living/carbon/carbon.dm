@@ -135,7 +135,7 @@ CREATION_TEST_IGNORE_SELF(/mob/living/carbon)
 	if(client && hud_used)
 		hud_used.throw_icon.icon_state = "act_throw_on"
 
-/mob/proc/throw_item(atom/target)
+/mob/proc/throw_item(atom/target, params)
 	SEND_SIGNAL(src, COMSIG_MOB_THROW, target)
 	SEND_GLOBAL_SIGNAL(COMSIG_GLOB_CARBON_THROW_THING, src, target)
 	return TRUE

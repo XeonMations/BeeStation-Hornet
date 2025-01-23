@@ -385,7 +385,7 @@
 		A.forceMove(ST)
 		A.visible_message("<span class='danger'>[A] climbs onto [surface]!</span>", \
 						"<span class='danger'>You climb onto [surface]!</span>")
-		A.pixel_y = A.base_pixel_y + 10
+		A.step_y = A.step_y + 10
 		falling = 1
 		sleep(10)
 

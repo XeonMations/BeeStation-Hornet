@@ -84,7 +84,7 @@
 			continue
 		components += component.type
 	set_circuit_components(components)
-	var/obj/item/usb_cable/cable = new(circuit.drop_location())
+	var/obj/item/usb_cable/cable = new(circuit.drop_location()[1])
 	cable.attached_circuit = circuit
 
 	on_atom_usb_cable_try_attach(src, cable, null)
@@ -237,7 +237,7 @@
 	unregister_circuit_signals()
 	unregister_physical_signals()
 
-	usb_cable.forceMove(attached_circuit.drop_location())
+	usb_cable.forceMove(attached_circuit.drop_location()[1])
 	usb_cable.balloon_alert_to_viewers("snap")
 
 	physical_object = null

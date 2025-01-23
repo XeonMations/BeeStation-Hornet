@@ -1,5 +1,6 @@
 /datum/component/waddling
 	dupe_mode = COMPONENT_DUPE_UNIQUE_PASSARGS
+	var/list/waddle_tracker = list()
 
 /datum/component/waddling/Initialize()
 	. = ..()
@@ -9,6 +10,12 @@
 		RegisterSignal(parent, COMSIG_MOVABLE_MOVED, PROC_REF(LivingWaddle))
 	else
 		RegisterSignal(parent, COMSIG_MOVABLE_MOVED, PROC_REF(Waddle))
+	waddle_tracker[target] = 0
+
+/datum/component/waddling/Destroy()
+	. = ..()
+	UnregisterSignal(parent, COMSIG_MOVABLE_MOVED)
+	waddle_tracker -= parent
 
 /datum/component/waddling/proc/LivingWaddle()
 	SIGNAL_HANDLER
@@ -21,6 +28,10 @@
 
 /datum/component/waddling/proc/Waddle()
 	SIGNAL_HANDLER
+
+	if(!COOLDOWN_FINISHED(src, waddle_tracker[target]))
+		return
+	COOLDOWN_START(src, waddle_tracker[target], 0.25 SECONDS)
 
 	if(!isatom(parent))
 		return

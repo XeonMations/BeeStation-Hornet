@@ -87,7 +87,7 @@
 		new /obj/effect/temp_visual/emp/pulse(get_turf(src))
 	else
 		playsound(get_turf(src), 'sound/effects/pop.ogg', 100, 1, -6)
-		var/obj/effect/dummy/chameleon/C = new/obj/effect/dummy/chameleon(user.drop_location())
+		var/obj/effect/dummy/chameleon/C = new/obj/effect/dummy/chameleon(user.drop_location()[1])
 		for(var/overlay_index in vis_overlay_data)
 			var/list/overlay_data = vis_overlay_data[overlay_index]
 			SSvis_overlays.add_vis_overlay(C, overlay_data["icon"], overlay_data["icon_state"], overlay_data["layer"], overlay_data["plane"], C.dir, alpha = overlay_data["alpha"], add_appearance_flags = overlay_data["appearance_flags"])

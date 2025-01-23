@@ -273,7 +273,7 @@
 /obj/item/organ/heart/gland/spiderman/activate()
 	to_chat(owner, "<span class='warning'>You feel something crawling in your skin.</span>")
 	owner.faction |= "spiders"
-	new /obj/structure/spider/spiderling(owner.drop_location())
+	new /obj/structure/spider/spiderling(owner.drop_location()[1])
 
 /obj/item/organ/heart/gland/egg
 	true_name = "roe/enzymatic synthesizer"

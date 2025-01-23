@@ -44,3 +44,5 @@ GLOBAL_LIST_INIT(markup_tags, list("_"  = list("<i>", "</i>"),
 //Should be in the form of "((\\W|^)@)(\[^@\]*)(@(\\W|$)), "g"", where @ is the appropriate tag from markup_tags
 GLOBAL_LIST_INIT(markup_regex, list("_"  = new /regex("((\\W|^)_)(\[^_\]*)(_(\\W|$))", "g"),
 									"**" = new /regex("((\\W|^)\\*\\*)(\[^\\*\\*\]*)(\\*\\*(\\W|$))", "g")))
+
+GLOBAL_DATUM_INIT(slider, /atom/movable/collider/slider, new)

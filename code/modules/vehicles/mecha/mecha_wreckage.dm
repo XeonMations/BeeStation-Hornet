@@ -79,7 +79,7 @@ CREATION_TEST_IGNORE_SUBTYPES(/obj/structure/mecha_wreckage)
 	. = TRUE
 	if(crowbar_salvage.len)
 		var/obj/S = pick(crowbar_salvage)
-		S.forceMove(user.drop_location())
+		S.forceMove(user.drop_location()[1])
 		user.visible_message("<span class='notice'>[user] pries [S] from [src].</span>", "<span class='notice'>You pry [S] from [src].</span>")
 		crowbar_salvage -= S
 		return

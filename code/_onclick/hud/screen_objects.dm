@@ -379,6 +379,8 @@ CREATION_TEST_IGNORE_SUBTYPES(/atom/movable/screen/close)
 			icon_state = "walking"
 		if(MOVE_INTENT_RUN)
 			icon_state = "running"
+		if(MOVE_INTENT_CRAWL)
+			icon_state = "crawling"
 	return ..()
 
 /atom/movable/screen/mov_intent/proc/toggle(mob/user)

@@ -1,15 +1,42 @@
 /atom/movable
 	layer = OBJ_LAYER
+	appearance_flags = TILE_BOUND | PIXEL_SCALE
+	// Movement related vars
+	step_size = 8
 	glide_size = 8
-	appearance_flags = TILE_BOUND|PIXEL_SCALE|LONG_GLIDE
+	//PIXEL MOVEMENT VARS
+	/// stores fractional pixel movement in the x
+	var/fx
+	/// stores fractional pixel movement in the y
+	var/fy
+	/// velocity in x
+	var/vx = 0
+	/// velocity in y
+	var/vy = 0
+	/// acceleration
+	var/accel = 1
+	/// deceleration
+	var/decel = 2
+	/// maxspeed
+	var/maxspeed = 6
+	/// velocity dir
+	var/vdir = NONE
+	/// sidestepper?
+	var/can_sidestep = FALSE
+	/// collider for sidestepping
+	var/atom/movable/collider/slider/slider
 
-	var/move_stacks = 0 //how many times a this movable had movement procs called on it since Moved() was last called
-	var/last_move = null
-	var/last_move_time = 0
-	var/anchored = FALSE
+	var/walking = NONE
 	var/move_resist = MOVE_RESIST_DEFAULT
 	var/move_force = MOVE_FORCE_DEFAULT
 	var/pull_force = PULL_FORCE_DEFAULT
+	///whether we are already sidestepping or not
+	var/sidestep = FALSE
+
+	//Misc
+	var/last_move = null
+	var/last_move_time = 0
+	var/anchored = FALSE
 	var/datum/thrownthing/throwing = null
 	var/throw_speed = 2 //How many tiles to move per ds when being thrown. Float values are fully supported
 	var/throw_range = 7
@@ -26,15 +53,11 @@
 	var/verb_sing = "sings"
 	var/verb_yell = "yells"
 	var/speech_span
-	///Are we moving with inertia? Mostly used as an optimization
 	var/inertia_moving = FALSE
-	///Delay in deciseconds between inertia based movement
-	var/inertia_move_delay = 5
 	/// Things we can pass through while moving. If any of this matches the thing we're trying to pass's [pass_flags_self], then we can pass through.
 	var/pass_flags = NONE
 	/// If false makes CanPass call CanPassThrough on this type instead of using default behaviour
 	var/generic_canpass = TRUE
-	var/moving_diagonally = 0 //0: not doing a diagonal move. 1 and 2: doing the first/second step of the diagonal move
 	var/atom/movable/moving_from_pull		//attempt to resume grab after moving instead of before.
 	///Holds information about any movement loops currently running/waiting to run on the movable. Lazy, will be null if nothing's going on
 	var/datum/movement_packet/move_packet
@@ -57,6 +80,9 @@
 	var/blocks_emissive = FALSE
 	///Internal holder for emissive blocker object, do not use directly use blocks_emissive
 	var/atom/movable/emissive_blocker/em_block
+
+	///how bounds handle rotation
+	var/brotation = BOUNDS_SIMPLE_ROTATE
 	/**
 	 * an associative lazylist of relevant nested contents by "channel", the list is of the form: list(channel = list(important nested contents of that type))
 	 * each channel has a specific purpose and is meant to replace potentially expensive nested contents iteration
@@ -77,6 +103,10 @@
 
 /atom/movable/Initialize(mapload)
 	. = ..()
+	set_sidestep(can_sidestep) // creates slider if there isn't one already
+	update_bounds(olddir=NORTH, newdir=dir) // bounds assume north but some things arent north by default for some god knows reason
+	if(opacity) // makes opaque objects not block entire tiles
+		appearance_flags &= ~TILE_BOUND
 	switch(blocks_emissive)
 		if(EMISSIVE_BLOCK_GENERIC)
 			var/mutable_appearance/gen_emissive_blocker = mutable_appearance(icon, icon_state, layer, EMISSIVE_PLANE)
@@ -174,18 +204,19 @@
 			em_block = new(src, render_target)
 		return em_block
 
+/atom/movable/proc/set_sidestep(val = 0)
+	can_sidestep = val
+	if(can_sidestep && !slider)
+		slider = new()
+	else if(!can_sidestep && slider)
+		qdel(slider)
+	return can_sidestep
+
 /atom/movable/update_overlays()
 	. = ..()
 	. += update_emissive_block()
 
 /atom/movable/vv_edit_var(var_name, var_value)
-	var/static/list/banned_edits = list("step_x", "step_y", "step_size", "bounds")
-	var/static/list/careful_edits = list("bound_x", "bound_y", "bound_width", "bound_height")
-	if(var_name in banned_edits)
-		return FALSE	//PLEASE no.
-	if((var_name in careful_edits) && (var_value % world.icon_size) != 0)
-		return FALSE
-
 	switch(var_name)
 		if(NAMEOF(src, anchored))
 			set_anchored(var_value)
@@ -243,8 +274,11 @@
 	pulling = AM
 	AM.set_pulledby(src)
 	setGrabState(state)
+	if(!isliving(pulling))
+		pulling.set_sidestep(TRUE)
 	if(ismob(AM))
 		var/mob/M = AM
+		M.update_movespeed() // set the proper step_size
 		log_combat(src, M, "grabbed", addition="passive grab", important = FALSE)
 		if(!supress_message)
 			M.visible_message("<span class='warning'>[src] grabs [M] passively.</span>", \
@@ -256,10 +290,13 @@
 	if(pulling)
 		if(ismob(pulling?.pulledby))
 			pulling.pulledby.log_message("has stopped pulling [key_name(pulling)]", LOG_ATTACK)
+			pulling.pulledby.update_movespeed() // set their movespeed to the usual
 		if(ismob(pulling))
 			pulling.log_message("has stopped being pulled by [key_name(pulling.pulledby)]", LOG_ATTACK)
 		pulling.set_pulledby(null)
-		var/mob/living/ex_pulled = pulling
+		if(!isliving(pulling))
+			pulling.set_sidestep(initial(pulling.can_sidestep))
+		var/atom/movable/ex_pulled = pulling
 		setGrabState(GRAB_PASSIVE)
 		pulling = null
 		SEND_SIGNAL(ex_pulled, COMSIG_MOVABLE_NO_LONGER_PULLED)
@@ -271,25 +308,18 @@
 	. = pulledby
 	pulledby = new_pulledby
 
-/atom/movable/proc/Move_Pulled(atom/A)
-	if(!pulling)
-		return FALSE
-	if(pulling.anchored || pulling.move_resist > move_force || !pulling.Adjacent(src, src, pulling))
-		stop_pulling()
-		return FALSE
-	if(isliving(pulling))
-		var/mob/living/L = pulling
-		if(L.buckled?.buckle_prevents_pull) //if they're buckled to something that disallows pulling, prevent it
-			stop_pulling()
-			return FALSE
-	if(A == loc && pulling.density)
-		return FALSE
-	var/move_dir = get_dir(pulling.loc, A)
-	if(!Process_Spacemove(move_dir))
-		return FALSE
-	pulling.Move(get_step(pulling.loc, move_dir), move_dir, glide_size)
+/atom/movable/proc/Move_Pulled(atom/A, params)
+	if(!check_pulling())
+		return
+	if(!Adjacent(A))
+		to_chat(src, "<span class='warning'>You can't move [pulling] that far!</span>")
+		return
+	if(ismovable(pulling))
+		pulling.step_size = 1 + pulling.Move(get_turf(A), get_dir(pulling.loc, A)) // 1 + pixels moved
+		pulling.step_size = step_size
+	return TRUE
 
-/mob/living/Move_Pulled(atom/A)
+/mob/living/Move_Pulled(atom/A, params)
 	. = ..()
 	if(!. || !isliving(A))
 		return
@@ -297,32 +327,314 @@
 	set_pull_offsets(L, grab_state)
 
 /atom/movable/proc/check_pulling()
-	if(pulling)
-		var/atom/movable/pullee = pulling
-		if(pullee && get_dist(src, pullee) > 1)
-			stop_pulling()
-			return
-		if(!isturf(loc))
-			stop_pulling()
-			return
-		if(pullee && !isturf(pullee.loc) && pullee.loc != loc) //to be removed once all code that changes an object's loc uses forceMove().
-			log_game("DEBUG:[src]'s pull on [pullee] wasn't broken despite [pullee] being in [pullee.loc]. Pull stopped manually.")
-			stop_pulling()
-			return
-		if(pulling.anchored || pulling.move_resist > move_force)
-			stop_pulling()
-			return
-	if(pulledby && moving_diagonally != FIRST_DIAG_STEP && get_dist(src, pulledby) > 1)		//separated from our puller and not in the middle of a diagonal move.
-		pulledby.stop_pulling()
-
-/atom/movable/proc/set_glide_size(target = 8)
-	if (HAS_TRAIT(src, TRAIT_NO_GLIDE))
+	. = FALSE
+	if(!pulling)
+		if(pulledby && bounds_dist(src, pulledby) > 32)
+			pulledby.stop_pulling()
 		return
-	SEND_SIGNAL(src, COMSIG_MOVABLE_UPDATE_GLIDE_SIZE, target)
-	glide_size = target
+	if(bounds_dist(src, pulling) > 32)
+		stop_pulling()
+		return
+	if(!isturf(loc))
+		stop_pulling()
+		return
+	if(pulling.anchored || pulling.move_resist > move_force)
+		stop_pulling()
+		return
+	if(isliving(pulling))
+		var/mob/living/liv = pulling
+		if(liv.buckled?.buckle_prevents_pull) //if they're buckled to something that disallows pulling, prevent it
+			stop_pulling()
+			return
+	return TRUE
 
-	for(var/mob/buckled_mob as anything in buckled_mobs)
-		buckled_mob.set_glide_size(target)
+#define ANGLE_ADJUST 10
+/**
+  * Handles the movement of the object src is pulling
+  *
+  * Tries to correct the pulled object if it's stuck
+  * uses degstep to move the pulled object at an angle
+  */
+/atom/movable/proc/handle_pulled_movement()
+	if(!pulling)
+		return FALSE
+	if(pulling.anchored)
+		return FALSE
+	if(pulling.move_resist > move_force)
+		return FALSE
+	var/distance = bounds_dist(src, pulling)
+	if(distance < 6)
+		return FALSE
+	var/angle = GET_DEG(pulling, src)
+	if((angle % 45) > 1) // We arent directly on a cardinal from the thing
+		var/tempA = WRAP(angle, 0, 45)
+		if(tempA >= 22.5)
+			angle += min(ANGLE_ADJUST, 45-tempA)
+		else
+			angle -= min(ANGLE_ADJUST, tempA)
+	angle = SIMPLIFY_DEGREES(angle)
+	var/direct = angle2dir(angle)
+	var/mspeed = vx
+	if(direct & NORTH || direct & SOUTH)
+		if(direct & EAST || direct & WEST)
+			mspeed = CEILING(sqrt((abs(vx) ^ 2) * (abs(vy) ^ 2)), 1)
+		else
+			mspeed = vy
+	pulling.add_velocity(direct, (abs(mspeed) + distance-6), TRUE)
+/* 	if(!degstep(pulling, angle, distance-6))
+		for(var/i in GLOB.cardinals)
+			if(direct & i)
+				if(step(pulling, i))
+					return TRUE */
+	return FALSE
+
+#undef ANGLE_ADJUST
+
+/**
+  * Checks the distance between the object we're pulling before moving
+  *
+  * Returns FALSE and prevents movement if the object we're pulling is too far and the direction
+  * src is moving isn't towards the pulled object.
+  * Returns TRUE and allows movement if the object we're pulling is in range.
+  */
+/atom/movable/proc/handle_pulled_premove(atom/newloc, direct, _step_x, _step_y)
+	if((bounds_dist(src, pulling) > 8 + maxspeed) && !(direct & GET_PIXELDIR(src, pulling)))
+		return FALSE
+	return TRUE
+
+/atom/movable/Move(atom/newloc, direct, _step_x, _step_y)
+	if(SEND_SIGNAL(src, COMSIG_MOVABLE_PRE_MOVE, newloc, direct, _step_x, _step_y) & COMPONENT_MOVABLE_BLOCK_PRE_MOVE)
+		return FALSE
+
+	if(!premove_pull_checks(newloc, direct, _step_x, _step_y))
+		return FALSE
+	var/atom/oldloc = loc
+
+	. = ..()
+	if(!. && can_sidestep && !sidestep)
+		//if this mob is able to slide when colliding, and is currently not attempting to slide
+		//mark that we are sliding
+		sidestep = TRUE
+		//call to the slider object to determine what direction our slide will happen in (if any)
+		. = slider.slide(src, direct, _step_x, _step_y)
+		if(.)
+			//if slider was able to slide, step us in the direction indicated
+			. = step(src, ., 2)
+		//mark that we are no longer sliding
+		sidestep = FALSE
+	last_move = direct
+	setDir(direct)
+	if(.)
+		Moved(oldloc, direct)
+		if(pulling) //we were pulling a thing and didn't lose it during our move.
+			handle_pulled_movement()
+			check_pulling()
+		if(has_buckled_mobs() && !handle_buckled_mob_movement(loc, direct, step_x, step_y))
+			return FALSE
+	else // we still didn't move, something is blocking further movement
+		walk(src, NONE)
+
+///Handles premove checks, called on client.mob by client/Move as well
+/atom/movable/proc/premove_pull_checks(newloc, direct, _step_x, _step_y)
+	if(pulling && !handle_pulled_premove(newloc, direct, _step_x, _step_y))
+		handle_pulled_movement()
+		check_pulling()
+		return FALSE
+	return TRUE
+
+/**
+  * Adds velocity to an movable atom
+  *
+  * Starts processing on SSmovement if the movable was not previously moving
+  * handles math for acceleration and diagonals, prevents further acceleration if maxspeed is reached
+  * Arguments:
+  * * direct - The direction of velocity
+  * * acceleration - if null, uses movables accel var. Otherwise overwrites the accel var to acceleration by a set amount
+  * * force - defaults to FALSE, if TRUE ignores maxspeed and forces acceleration to be added to velocity
+  */
+/atom/movable/proc/add_velocity(direct = 0, acceleration = null, force = FALSE)
+	if(vx == 0 && vy == 0)
+		SSmovement.moving[src] = src
+	var/accelu = accel
+	if(!isnull(acceleration)) // acceleration override
+		accelu = acceleration
+	var/limit_speed = 0
+	if(!force || vx * vx + vy * vy <= maxspeed * maxspeed + 1)
+		limit_speed = 1
+	if(direct & EAST)
+		if(vx < maxspeed || force)
+			vx += accelu
+	else if(direct & WEST)
+		if(vx > -maxspeed || force)
+			vx -= accelu
+	if(direct & NORTH)
+		if(vy < maxspeed || force)
+			vy += accelu
+	else if(direct & SOUTH)
+		if(vy > -maxspeed || force)
+			vy -= accelu
+	if(limit_speed)
+		var/len = sqrt(vx * vx + vy * vy)
+		if(len > maxspeed)
+			vx = round(maxspeed * vx / len, 0.1)
+			vy = round(maxspeed * vy / len, 0.1)
+	if(vx != 0 || vy != 0) // we have velocity
+		vdir = direct
+		return TRUE // test the waters
+
+/**
+  * Forces the velocity of a movable atom to the value defined in velocity
+  *
+  * Starts processing on SSmovement if the movable was not previously moving
+  * handles math for acceleration and diagonals, prevents further acceleration if maxspeed is reached
+  * Arguments:
+  * * direct - The direction of velocity
+  * * velocity - The velocity to be forced in the direction provided
+  */
+/atom/movable/proc/force_velocity(direct, velocity)
+	if(vx == 0 && vy == 0)
+		SSmovement.moving[src] = src
+	if(direct & EAST)
+		vx = velocity
+	else if(direct & WEST)
+		vx = -velocity
+	if(direct & NORTH)
+		vy = velocity
+	else if(direct & SOUTH)
+		vy = -velocity
+
+	if(vx != 0 || vy != 0) // we have velocity
+		vdir = direct
+		return TRUE
+
+/atom/movable/proc/handle_inertia()
+	var/move_x = vx
+	var/move_y = vy
+	// find the integer part of your move
+	var/ipx = round(abs(vx)) * ((vx < 0) ? -1 : 1)
+	var/ipy = round(abs(vy)) * ((vy < 0) ? -1 : 1)
+
+	// accumulate the fractional parts of the move
+	fx += (move_x - ipx)
+	fy += (move_y - ipy)
+
+	// ignore the fractional parts
+	move_x = ipx
+	move_y = ipy
+
+	// increment the move if the fractions have added up
+	while(fx > 0.5)
+		fx -= 0.5
+		move_x += 1
+	while(fx < -0.5)
+		fx += 0.5
+		move_x -= 1
+
+	while(fy > 0.5)
+		fy -= 0.5
+		move_y += 1
+	while(fy < -0.5)
+		fy += 0.5
+		move_y -= 1
+	var/old_step_size = step_size
+	// Enable sliding to anywhere in the world.
+	step_size = 1#INF
+	//change dir
+	var/dir_to_set
+	if(move_x > 0)
+		dir_to_set = EAST
+	else if(move_x < 0)
+		dir_to_set = WEST
+	if(move_y > 0)
+		dir_to_set |= NORTH
+	else if(move_y < 0)
+		dir_to_set |= SOUTH
+	// Move and return the result.
+	. = Move(loc, dir_to_set, step_x + move_x, step_y + move_y)
+	if(!.) // movement failed, means we can't move either
+		vx = 0
+		vy = 0
+		vdir = NONE
+		step_size = old_step_size
+		return FALSE
+	// Set step_size to the amount actually moved.
+	// This tells clients to smoothly interpolate this when using client.fps.
+	step_size = 1 + .
+
+	if(vx > maxspeed)
+		vx -= decel
+	else if(vx < -maxspeed)
+		vx += decel
+	if(vy > maxspeed)
+		vy -= decel
+	else if(vy < -maxspeed)
+		vy += decel
+	// begin decelerating if movement keys aren't held
+	if(ismob(src))
+		var/mob/M = src
+		if(M.client)
+			var/client/user = M.client
+			var/movement_dir = NONE
+			for(var/_key in user.keys_held)
+				movement_dir = movement_dir | user.movement_keys[_key]
+			if(!(movement_dir & EAST || movement_dir & WEST))
+				if(vx > decel)
+					vx -= decel
+				else if(vx < -decel)
+					vx += decel
+				else
+					vx = 0
+			if(!(movement_dir & NORTH || movement_dir & SOUTH))
+				if(vy > decel)
+					vy -= decel
+				else if(vy < -decel)
+					vy += decel
+				else
+					vy = 0
+		else if(vdir) // copy pasta for mobs without clients
+			if((vdir & EAST) || (vdir & WEST))
+				if(vx > decel)
+					vx -= decel
+				else if(vx < -decel)
+					vx += decel
+				else
+					vx = 0
+
+			if((vdir & SOUTH) || (vdir & NORTH))
+				if(vy > decel)
+					vy -= decel
+				else if(vy < -decel)
+					vy += decel
+				else
+					vy = 0
+	else if(vdir) // for movables
+		if((vdir & EAST) || (vdir & WEST))
+			if(vx > decel)
+				vx -= decel
+			else if(vx < -decel)
+				vx += decel
+			else
+				vx = 0
+
+		if((vdir & SOUTH) || (vdir & NORTH))
+			if(vy > decel)
+				vy -= decel
+			else if(vy < -decel)
+				vy += decel
+			else
+				vy = 0
+	//update vdir
+	if(vx > 0)
+		vdir = EAST
+	else if(vx < 0)
+		vdir = WEST
+	if(vy > 0)
+		vdir |= NORTH
+	else if(vy < 0)
+		vdir |= SOUTH
+	else if(vx == 0 && vy == 0) // vx and vy is 0 we have no inertia
+		vdir = NONE
+		return FALSE
 
 /**
  * meant for movement with zero side effects. only use for objects that are supposed to move "invisibly" (like camera mobs or ghosts)
@@ -335,186 +647,8 @@
 	loc = new_loc
 	Moved(old_loc)
 
-////////////////////////////////////////
-// Here's where we rewrite how byond handles movement except slightly different
-// To be removed on step_ conversion
-// All this work to prevent a second bump
-/atom/movable/Move(atom/newloc, direction, glide_size_override = 0, update_dir = TRUE)
-	. = FALSE
-	if(!newloc || newloc == loc)
-		return
-
-	if(!direction)
-		direction = get_dir(src, newloc)
-
-	if(set_dir_on_move && dir != direction && update_dir)
-		setDir(direction)
-
-	var/is_multi_tile_object = bound_width > 32 || bound_height > 32
-
-	var/list/old_locs
-	if(is_multi_tile_object && isturf(loc))
-		old_locs = locs // locs is a special list, this is effectively the same as .Copy() but with less steps
-		for(var/atom/exiting_loc as anything in old_locs)
-			if(!exiting_loc.Exit(src, direction))
-				return
-	else
-		if(!loc.Exit(src, direction))
-			return
-
-	var/list/new_locs
-	if(is_multi_tile_object && isturf(newloc))
-		new_locs = block(
-			newloc,
-			locate(
-				min(world.maxx, newloc.x + CEILING(bound_width / 32, 1)),
-				min(world.maxy, newloc.y + CEILING(bound_height / 32, 1)),
-				newloc.z
-				)
-		) // If this is a multi-tile object then we need to predict the new locs and check if they allow our entrance.
-		for(var/atom/entering_loc as anything in new_locs)
-			if(!entering_loc.Enter(src))
-				return
-			if(SEND_SIGNAL(src, COMSIG_MOVABLE_PRE_MOVE, entering_loc) & COMPONENT_MOVABLE_BLOCK_PRE_MOVE)
-				return
-	else // Else just try to enter the single destination.
-		if(!newloc.Enter(src))
-			return
-		if(SEND_SIGNAL(src, COMSIG_MOVABLE_PRE_MOVE, newloc) & COMPONENT_MOVABLE_BLOCK_PRE_MOVE)
-			return
-
-	// Past this is the point of no return
-	var/atom/oldloc = loc
-	var/area/oldarea = get_area(oldloc)
-	var/area/newarea = get_area(newloc)
-	move_stacks++
-
-	loc = newloc
-
-	. = TRUE
-
-	if(old_locs) // This condition will only be true if it is a multi-tile object.
-		for(var/atom/exited_loc as anything in (old_locs - new_locs))
-			exited_loc.Exited(src, direction)
-	else // Else there's just one loc to be exited.
-		oldloc.Exited(src, direction)
-	if(oldarea != newarea)
-		oldarea.Exited(src, direction)
-
-	if(new_locs) // Same here, only if multi-tile.
-		for(var/atom/entered_loc as anything in (new_locs - old_locs))
-			entered_loc.Entered(src, oldloc, old_locs)
-	else
-		newloc.Entered(src, oldloc, old_locs)
-	if(oldarea != newarea)
-		newarea.Entered(src, oldarea)
-
-	Moved(oldloc, direction, FALSE, old_locs)
-
-////////////////////////////////////////
-
-/atom/movable/Move(atom/newloc, direct, glide_size_override = 0, update_dir = TRUE)
-	var/atom/movable/pullee = pulling
-	var/turf/T = loc
-	if(!moving_from_pull)
-		check_pulling()
-	if(!loc || !newloc)
-		return FALSE
-	var/atom/oldloc = loc
-	//Early override for some cases like diagonal movement
-	if(glide_size_override)
-		set_glide_size(glide_size_override)
-
-	var/flat_direct = direct & ~(UP|DOWN)
-	if(loc != newloc)
-		if (!(flat_direct & (flat_direct - 1))) //Cardinal move
-			. = ..()
-		else //Diagonal move, split it into cardinal moves
-			moving_diagonally = FIRST_DIAG_STEP
-			var/first_step_dir
-			// The `&& moving_diagonally` checks are so that a forceMove taking
-			// place due to a Crossed, Bumped, etc. call will interrupt
-			// the second half of the diagonal movement, or the second attempt
-			// at a first half if step() fails because we hit something.
-			if (direct & NORTH)
-				if (direct & EAST)
-					if (step(src, NORTH) && moving_diagonally)
-						first_step_dir = NORTH
-						moving_diagonally = SECOND_DIAG_STEP
-						. = step(src, EAST)
-					else if (moving_diagonally && step(src, EAST))
-						first_step_dir = EAST
-						moving_diagonally = SECOND_DIAG_STEP
-						. = step(src, NORTH)
-				else if (direct & WEST)
-					if (step(src, NORTH) && moving_diagonally)
-						first_step_dir = NORTH
-						moving_diagonally = SECOND_DIAG_STEP
-						. = step(src, WEST)
-					else if (moving_diagonally && step(src, WEST))
-						first_step_dir = WEST
-						moving_diagonally = SECOND_DIAG_STEP
-						. = step(src, NORTH)
-			else if (direct & SOUTH)
-				if (direct & EAST)
-					if (step(src, SOUTH) && moving_diagonally)
-						first_step_dir = SOUTH
-						moving_diagonally = SECOND_DIAG_STEP
-						. = step(src, EAST)
-					else if (moving_diagonally && step(src, EAST))
-						first_step_dir = EAST
-						moving_diagonally = SECOND_DIAG_STEP
-						. = step(src, SOUTH)
-				else if (direct & WEST)
-					if (step(src, SOUTH) && moving_diagonally)
-						first_step_dir = SOUTH
-						moving_diagonally = SECOND_DIAG_STEP
-						. = step(src, WEST)
-					else if (moving_diagonally && step(src, WEST))
-						first_step_dir = WEST
-						moving_diagonally = SECOND_DIAG_STEP
-						. = step(src, SOUTH)
-			if(moving_diagonally == SECOND_DIAG_STEP)
-				if(!. && set_dir_on_move && update_dir)
-					setDir(first_step_dir)
-				else if (!inertia_moving)
-					newtonian_move(direct)
-			moving_diagonally = 0
-			return
-
-	if(!loc || (loc == oldloc && oldloc != newloc))
-		last_move = null
-		return
-
-	if(. && pulling && pulling == pullee && pulling != moving_from_pull) //we were pulling a thing and didn't lose it during our move.
-		if(pulling.anchored)
-			stop_pulling()
-		else
-			var/pull_dir = get_dir(src, pulling)
-			//puller and pullee more than one tile away or in diagonal position and whatever the pullee is pulling isn't already moving from a pull as it'll most likely result in an infinite loop a la ouroborus.
-			if(!pulling.pulling?.moving_from_pull && (get_dist(src, pulling) > 1 || (moving_diagonally != SECOND_DIAG_STEP && ((pull_dir - 1) & pull_dir))))
-				pulling.moving_from_pull = src
-				pulling.Move(T, get_dir(pulling, T), glide_size) //the pullee tries to reach our previous position
-				pulling.moving_from_pull = null
-			check_pulling()
-
-
-	//glide_size strangely enough can change mid movement animation and update correctly while the animation is playing
-	//This means that if you don't override it late like this, it will just be set back by the movement update that's called when you move turfs.
-	if(glide_size_override)
-		set_glide_size(glide_size_override)
-
-	last_move = direct
-	last_move_time = world.time
-
-	if(set_dir_on_move && dir != direct && update_dir)
-		setDir(flat_direct)
-	if(. && has_buckled_mobs() && !handle_buckled_mob_movement(loc, direct, glide_size_override)) //movement failed due to buckled mob(s)
-		return FALSE
-
 /**
- * Called after a successful Move(). By this point, we've already moved.
- * Arguments:
+ * * Called after a successful Move(). By this point, we've already moved * Arguments:
  * * old_loc is the location prior to the move. Can be null to indicate nullspace.
  * * movement_dir is the direction the movement took place. Can be NONE if it was some sort of teleport.
  * * The forced flag indicates whether this was a forced move, which skips many checks of regular movement.

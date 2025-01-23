@@ -144,14 +144,14 @@
 	switch(activation_type)
 		if(SLIME_ACTIVATE_MINOR)
 			var/food_type = get_random_food()
-			var/obj/O = new food_type(user.drop_location())
+			var/obj/O = new food_type(user.drop_location()[1])
 			user.put_in_active_hand(O)
 			playsound(user, 'sound/effects/splat.ogg', 50, 1)
 			user.visible_message("<span class='warning'>[user] spits out [O]!</span>", "<span class='notice'>You spit out [O]!</span>")
 			return 20 SECONDS
 		if(SLIME_ACTIVATE_MAJOR)
 			var/drink_type = get_random_drink()
-			var/obj/O = new drink_type(user.drop_location())
+			var/obj/O = new drink_type(user.drop_location()[1])
 			user.put_in_active_hand(O)
 			playsound(user, 'sound/effects/splat.ogg', 50, 1)
 			user.visible_message("<span class='warning'>[user] spits out [O]!</span>", "<span class='notice'>You spit out [O]!</span>")
@@ -565,7 +565,7 @@
 									/obj/item/toy/crayon/mime,
 									/obj/item/toy/crayon/rainbow
 								))
-			var/obj/item/O = new chosen(user.drop_location())
+			var/obj/item/O = new chosen(user.drop_location()[1])
 			user.put_in_active_hand(O)
 			playsound(user, 'sound/effects/splat.ogg', 50, 1)
 			user.visible_message("<span class='warning'>[user] spits out [O]!</span>", "<span class='notice'>You spit out [O]!</span>")
@@ -578,7 +578,7 @@
 									/obj/item/toy/crayon/spraycan/lubecan,
 									/obj/item/toy/crayon/spraycan/mimecan
 								))
-			var/obj/item/O = new chosen(user.drop_location())
+			var/obj/item/O = new chosen(user.drop_location()[1])
 			user.put_in_active_hand(O)
 			playsound(user, 'sound/effects/splat.ogg', 50, 1)
 			user.visible_message("<span class='warning'>[user] spits out [O]!</span>", "<span class='notice'>You spit out [O]!</span>")
@@ -668,7 +668,7 @@
 								/obj/item/slime_extract/cerulean,
 								/obj/item/slime_extract/sepia
 								))
-			var/obj/item/O = new chosen(user.drop_location())
+			var/obj/item/O = new chosen(user.drop_location()[1])
 			user.put_in_active_hand(O)
 			playsound(user, 'sound/effects/splat.ogg', 50, 1)
 			user.visible_message("<span class='warning'>[user] spits out [O]!</span>", "<span class='notice'>You spit out [O]!</span>")

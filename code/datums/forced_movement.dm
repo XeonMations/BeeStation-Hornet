@@ -59,23 +59,23 @@
 	var/atom/tar = target
 
 	if(!recursive)
-		. = step_towards(vic, tar)
+		. = step_towards(vic, tar, 32)
 
 	//shit way for getting around corners
 	if(!.) //If stepping towards the target failed
 		if(tar.x > vic.x) //If we're going x, step x
-			if(step(vic, EAST))
+			if(step(vic, EAST, 32))
 				. = TRUE
 		else if(tar.x < vic.x)
-			if(step(vic, WEST))
+			if(step(vic, WEST, 32))
 				. = TRUE
 
 		if(!.) //If the x step failed, go y
 			if(tar.y > vic.y)
-				if(step(vic, NORTH))
+				if(step(vic, NORTH, 32))
 					. = TRUE
 			else if(tar.y < vic.y)
-				if(step(vic, SOUTH))
+				if(step(vic, SOUTH, 32))
 					. = TRUE
 
 			if(!.) //If both failed, try again for some reason
@@ -84,4 +84,4 @@
 				else
 					. = TryMove(TRUE)
 
-	. = . && (vic.loc != tar.loc)
+	. = . && !(get_turf(tar) in vic.locs)

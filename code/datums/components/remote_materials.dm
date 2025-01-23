@@ -53,7 +53,7 @@ handles linking back and forth.
 	else if (mat_container)
 		// specify explicitly in case the other component is deleted first
 		var/atom/P = parent
-		mat_container.retrieve_all(P.drop_location())
+		mat_container.retrieve_all(P.drop_location()[1])
 	return ..()
 
 /datum/component/remote_materials/proc/_MakeLocal()
@@ -169,7 +169,7 @@ handles linking back and forth.
 	if (on_hold())
 		movable_parent.say("Mineral access is on hold, please contact the quartermaster.")
 		return 0
-	var/count = mat_container.retrieve_sheets(eject_amount, material_ref, movable_parent.drop_location())
+	var/count = mat_container.retrieve_sheets(eject_amount, material_ref, movable_parent.drop_location()[1])
 	var/list/matlist = list()
 	matlist[material_ref] = eject_amount
 	silo_log(parent, "ejected", -count, "sheets", matlist)

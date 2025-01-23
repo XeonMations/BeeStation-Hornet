@@ -29,6 +29,6 @@
 	for(var/thing_to_spawn in loot)
 		if(loot[thing_to_spawn]) //If this is an assoc list, use the value of that to get the right amount
 			for(var/index in 1 to loot[thing_to_spawn])
-				new thing_to_spawn(target.drop_location())
+				new thing_to_spawn(target.drop_location()[1])
 		else
-			new thing_to_spawn(target.drop_location())
+			new thing_to_spawn(target.drop_location()[1])

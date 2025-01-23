@@ -44,7 +44,7 @@
 
 			var/list/errors = list()
 
-			var/obj/item/integrated_circuit/loaded/new_circuit = new(usr.drop_location())
+			var/obj/item/integrated_circuit/loaded/new_circuit = new(usr.drop_location()[1])
 			new_circuit.load_circuit_data(circuit.convert_to_json(), errors)
 
 			if (length(errors))

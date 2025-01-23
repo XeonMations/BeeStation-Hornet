@@ -36,7 +36,7 @@
 /datum/element/food_trash/proc/async_generate_trash(datum/source)
 	var/atom/edible_object = source
 
-	var/obj/item/trash_item = generate_trash_procpath ? call(source, generate_trash_procpath)() : new trash(edible_object.drop_location())
+	var/obj/item/trash_item = generate_trash_procpath ? call(source, generate_trash_procpath)() : new trash(edible_object.drop_location()[1])
 
 	if(isliving(edible_object.loc))
 		var/mob/living/food_holding_mob = edible_object.loc

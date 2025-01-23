@@ -43,7 +43,7 @@
 
 		victim.add_bleeding(BLEED_DEEP_WOUND)
 		victim.adjustFireLoss(20)
-		new /obj/effect/temp_visual/cleave(victim.drop_location())
+		new /obj/effect/temp_visual/cleave(victim.drop_location()[1])
 
 /obj/effect/proc_holder/spell/pointed/cleave/can_target(atom/target, mob/user, silent)
 	if(!ishuman(target))

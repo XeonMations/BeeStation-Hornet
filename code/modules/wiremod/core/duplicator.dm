@@ -215,7 +215,7 @@ GLOBAL_LIST_INIT(circuit_dupe_whitelisted_types, list(
 	if(!txt)
 		return
 
-	var/obj/item/integrated_circuit/loaded/circuit = new(mob.drop_location())
+	var/obj/item/integrated_circuit/loaded/circuit = new(mob.drop_location()[1])
 	circuit.load_circuit_data(txt, errors)
 
 	if(length(errors))

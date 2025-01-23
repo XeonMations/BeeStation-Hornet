@@ -150,7 +150,7 @@
 		desc = "A carton with the bottom half burst open. Might give you a papercut."
 	else
 		if(prob(33))
-			var/obj/item/shard/stab_with = new(to_mimic.drop_location())
+			var/obj/item/shard/stab_with = new(to_mimic.drop_location()[1])
 			target.Bumped(stab_with)
 		playsound(src, "shatter", 70, TRUE)
 	name = "broken [to_mimic.name]"

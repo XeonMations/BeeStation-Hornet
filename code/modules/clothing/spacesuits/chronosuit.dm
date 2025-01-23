@@ -281,7 +281,7 @@
 		return
 	if(user == holder)
 		if(loc == user || (user.client && user.client.eye != src))
-			forceMove(user.drop_location())
+			forceMove(user.drop_location()[1])
 			user.set_machine(src)
 			user.reset_perspective(src)
 		var/atom/step = get_step(src, direction)

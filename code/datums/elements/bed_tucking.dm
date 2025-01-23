@@ -36,7 +36,7 @@
 	if(!istype(target_bed))
 		return
 
-	if(!tucker.transferItemToLoc(tucked, target_bed.drop_location()))
+	if(!tucker.transferItemToLoc(tucked, target_bed.drop_location()[1]))
 		return
 
 	to_chat(tucker, "<span class='notice'>You lay [tucked] out on [target_bed].</span>")

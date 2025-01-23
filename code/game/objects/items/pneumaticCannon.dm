@@ -241,7 +241,7 @@
 		if(!tank)
 			return
 		to_chat(user, "<span class='notice'>You detach \the [thetank] from \the [src].</span>")
-		tank.forceMove(user.drop_location())
+		tank.forceMove(user.drop_location()[1])
 		user.put_in_hands(tank)
 		tank = null
 	if(!removing)

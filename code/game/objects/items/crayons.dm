@@ -561,7 +561,7 @@
 	if(flags_1 & HOLOGRAM_1)
 		return
 
-	var/obj/item/stack/sheet/cardboard/cardboard = new /obj/item/stack/sheet/cardboard(user.drop_location())
+	var/obj/item/stack/sheet/cardboard/cardboard = new /obj/item/stack/sheet/cardboard(user.drop_location()[1])
 	to_chat(user, "<span class='notice'>You fold the [src] into cardboard.</span>")
 	user.put_in_active_hand(cardboard)
 	qdel(src)

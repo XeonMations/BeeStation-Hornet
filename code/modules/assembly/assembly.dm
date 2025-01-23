@@ -49,7 +49,7 @@
 		connected = null
 	if(!holder)
 		return FALSE
-	forceMove(holder.drop_location())
+	forceMove(holder.drop_location()[1])
 	holder = null
 	return TRUE
 

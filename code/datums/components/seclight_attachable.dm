@@ -191,7 +191,7 @@
 		return
 
 	// We were deconstructed in any other way, so we can just drop the light on the ground (which removes it via signal).
-	light.forceMove(source.drop_location())
+	light.forceMove(source.drop_location()[1])
 
 /// Signal proc for [COMSIG_PARENT_QDELETING] that deletes our light if our parent is deleted.
 /datum/component/seclite_attachable/proc/on_parent_deleted(obj/item/source)
@@ -249,7 +249,7 @@
 	var/obj/item/flashlight/seclite/to_remove = light
 
 	// The forcemove here will call exited on the light, and automatically update our references / etc
-	to_remove.forceMove(source.drop_location())
+	to_remove.forceMove(source.drop_location()[1])
 	if(source.Adjacent(user) && !issilicon(user))
 		user.put_in_hands(to_remove)
 

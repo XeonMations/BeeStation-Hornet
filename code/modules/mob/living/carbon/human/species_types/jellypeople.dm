@@ -347,7 +347,7 @@
 /datum/species/oozeling/luminescent/on_species_loss(mob/living/carbon/C)
 	. = ..()
 	if(current_extract)
-		current_extract.forceMove(C.drop_location())
+		current_extract.forceMove(C.drop_location()[1])
 		current_extract = null
 	QDEL_NULL(glow)
 	QDEL_NULL(integrate_extract)
@@ -401,7 +401,7 @@
 	if(species.current_extract)
 		var/obj/item/slime_extract/S = species.current_extract
 		if(!H.put_in_active_hand(S))
-			S.forceMove(H.drop_location())
+			S.forceMove(H.drop_location()[1])
 		species.current_extract = null
 		to_chat(H, "<span class='notice'>You eject [S].</span>")
 		species.update_slime_actions()

@@ -20,7 +20,7 @@
 	src.listener = listener
 
 	while(ismovable(target))
-		RegisterSignal(target, COMSIG_MOVABLE_MOVED, PROC_REF(move_react))
+		RegisterSignal(target, COMSIG_MOVABLE_MOVED_TURF, PROC_REF(move_react))
 		target = target.loc
 
 /// Stops tracking
@@ -29,7 +29,7 @@
 		return
 	var/atom/movable/target = tracked
 	while(ismovable(target))
-		UnregisterSignal(target, COMSIG_MOVABLE_MOVED)
+		UnregisterSignal(target, COMSIG_MOVABLE_MOVED_TURF)
 		target = target.loc
 
 /**
@@ -39,17 +39,15 @@
 /datum/movement_detector/proc/move_react(atom/movable/mover, atom/oldloc, direction)
 	SIGNAL_HANDLER
 
-	var/turf/newturf = get_turf(tracked)
-
 	if(oldloc && !isturf(oldloc))
 		var/atom/target = oldloc
 		while(ismovable(target))
-			UnregisterSignal(target, COMSIG_MOVABLE_MOVED)
+			UnregisterSignal(target, COMSIG_MOVABLE_MOVED_TURF)
 			target = target.loc
-	if(tracked.loc != newturf)
+	else
 		var/atom/target = mover.loc
 		while(ismovable(target))
-			RegisterSignal(target, COMSIG_MOVABLE_MOVED, PROC_REF(move_react), TRUE)
+			RegisterSignal(target, COMSIG_MOVABLE_MOVED_TURF, PROC_REF(move_react), TRUE)
 			target = target.loc
 
 	listener.Invoke(tracked, mover, oldloc, direction)

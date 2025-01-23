@@ -20,7 +20,7 @@
 		living_mob.adjustBruteLoss(30)
 
 	playsound(user,'sound/magic/voidblink.ogg',100)
-	new /obj/effect/temp_visual/voidin(user.drop_location())
+	new /obj/effect/temp_visual/voidin(user.drop_location()[1])
 	for(var/mob/living/livies in view(7, user) - user)
 
 		if(get_dist(user, livies) < 4)

@@ -121,7 +121,7 @@
 	if(!attacker.transferItemToLoc(ingredient, atom_parent))
 		return
 	if (replacement)
-		var/atom/replacement_parent = new replacement(atom_parent.drop_location())
+		var/atom/replacement_parent = new replacement(atom_parent.drop_location()[1])
 		ingredient.forceMove(replacement_parent)
 		replacement = null
 		replacement_parent.TakeComponent(src)

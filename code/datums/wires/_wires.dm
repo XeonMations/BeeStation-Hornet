@@ -328,7 +328,7 @@
 						if(!L.temporarilyRemoveItemFromInventory(A))
 							return
 						if(!attach_assembly(target_wire, A))
-							A.forceMove(L.drop_location())
+							A.forceMove(L.drop_location()[1])
 						. = TRUE
 					else
 						to_chat(L, "<span class='warning'>You need an attachable assembly!</span>")

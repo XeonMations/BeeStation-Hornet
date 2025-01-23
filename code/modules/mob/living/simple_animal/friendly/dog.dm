@@ -184,7 +184,7 @@ GLOBAL_LIST_INIT(strippable_corgi_items, create_strippable_list(list(
 
 	if(!ispath(equipping.dog_fashion, /datum/dog_fashion/back))
 		to_chat(user, "<span class='warning'>You set [equipping] on [source]'s back, but it falls off!</span>")
-		equipping.forceMove(source.drop_location())
+		equipping.forceMove(source.drop_location()[1])
 		if(prob(25))
 			step_rand(equipping)
 		var/mob/M = source

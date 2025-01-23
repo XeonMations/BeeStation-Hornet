@@ -179,9 +179,9 @@
 		if(moved)
 			if(M)
 				if(!M.put_in_active_hand(I))
-					I.forceMove(parent.drop_location())
+					I.forceMove(parent.drop_location()[1])
 			else
-				I.forceMove(parent.drop_location())
+				I.forceMove(parent.drop_location()[1])
 		return FALSE
 	I.on_enter_storage(master)
 	I.item_flags |= IN_STORAGE

@@ -216,7 +216,7 @@
 	log_combat(heretic_mind.current, sac_target, "sacrificed")
 
 	if(sac_target.legcuffed)
-		sac_target.legcuffed.forceMove(sac_target.drop_location())
+		sac_target.legcuffed.forceMove(sac_target.drop_location()[1])
 		sac_target.legcuffed.dropped(sac_target)
 		sac_target.legcuffed = null
 		sac_target.update_inv_legcuffed()

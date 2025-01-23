@@ -209,7 +209,7 @@
 			idle = min(100, ++idle)
 			if(idle >= BEE_IDLE_ROAMING && prob(BEE_PROB_GOROAM))
 				toggle_ai(AI_ON)
-				forceMove(beehome.drop_location())
+				forceMove(beehome.drop_location()[1])
 		else
 			idle = max(0, --idle)
 			if(idle <= BEE_IDLE_GOHOME && prob(BEE_PROB_GOHOME))
@@ -278,7 +278,7 @@
 		if(S.reagents.has_reagent(/datum/reagent/royal_bee_jelly)) //checked twice, because I really don't want royal bee jelly to be duped
 			if(S.reagents.has_reagent(/datum/reagent/royal_bee_jelly,5))
 				S.reagents.remove_reagent(/datum/reagent/royal_bee_jelly, 5)
-				var/obj/item/queen_bee/qb = new(user.drop_location())
+				var/obj/item/queen_bee/qb = new(user.drop_location()[1])
 				qb.queen = new(qb)
 				if(queen && queen.beegent)
 					qb.queen.assign_reagent(queen.beegent) //Bees use the global singleton instances of reagents, so we don't need to worry about one bee being deleted and her copies losing their reagents.
@@ -312,7 +312,7 @@
 		idle = min(100, ++idle)
 		if(idle >= BEE_IDLE_ROAMING && prob(BEE_PROB_GOROAM))
 			toggle_ai(AI_ON)
-			forceMove(beehome.drop_location())
+			forceMove(beehome.drop_location()[1])
 	else
 		..()
 

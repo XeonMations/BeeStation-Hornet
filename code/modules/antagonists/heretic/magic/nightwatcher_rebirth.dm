@@ -29,7 +29,7 @@
 			target.death()
 
 		target.take_overall_damage(burn = 20)
-		new /obj/effect/temp_visual/eldritch_smoke(target.drop_location())
+		new /obj/effect/temp_visual/eldritch_smoke(target.drop_location()[1])
 		user.heal_overall_damage(brute = 10, burn = 10, stamina = 10, updating_health = FALSE)
 		user.adjustToxLoss(-10, updating_health = FALSE, forced = TRUE)
 		user.adjustOxyLoss(-10)

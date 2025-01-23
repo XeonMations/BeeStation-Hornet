@@ -219,7 +219,7 @@
 				C.vomit(0, FALSE, TRUE, FLOOR(excess / 100, 1), FALSE, VOMIT_NANITE, FALSE)
 			else
 				host_mob.visible_message("<span class='warning'>A metallic grey slurry bursts out of [host_mob]'s skin!</span>", "<span class='userdanger'>A metallic grey slurry violently bursts out of your skin!</span>");
-				if(isturf(host_mob.drop_location()))
+				if(isturf(host_mob.drop_location()[1]))
 					var/turf/T = host_mob.drop_location()
 					T.add_vomit_floor(host_mob, VOMIT_NANITE, FALSE)
 		if((NANITE_EXCESS_BURST + 0.1) to INFINITY) //Way too many nanites, they just leave through the closest exit before they harm/poison the host
@@ -236,7 +236,7 @@
 				C.vomit(0, FALSE, TRUE, 2, FALSE, VOMIT_NANITE, FALSE) //nanites coming out of your mouth
 
 			//nanites everywhere
-			if(isturf(host_mob.drop_location()))
+			if(isturf(host_mob.drop_location()[1]))
 				var/turf/T = host_mob.drop_location()
 				T.add_vomit_floor(host_mob, VOMIT_NANITE, FALSE)
 				for(var/turf/adjacent_turf in oview(host_mob, 1))

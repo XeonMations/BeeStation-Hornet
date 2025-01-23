@@ -1,5 +1,4 @@
 /datum/component/riding
-	var/last_vehicle_move = 0 //used for move delays
 	var/last_move_diagonal = FALSE
 	var/vehicle_move_delay = 2 //tick delay between movements, lower = faster, higher = slower
 	var/keytype
@@ -28,6 +27,7 @@
 /datum/component/riding/Initialize()
 	if(!ismovable(parent))
 		return COMPONENT_INCOMPATIBLE
+	update_movespeed()
 	RegisterSignal(parent, COMSIG_ATOM_DIR_CHANGE, PROC_REF(vehicle_turned))
 	RegisterSignal(parent, COMSIG_MOVABLE_BUCKLE, PROC_REF(vehicle_mob_buckle))
 	RegisterSignal(parent, COMSIG_MOVABLE_UNBUCKLE, PROC_REF(vehicle_mob_unbuckle))
@@ -35,6 +35,11 @@
 	RegisterSignal(parent, COMSIG_ATOM_EMP_ACT, PROC_REF(on_emp_act))
 	//Calculate the move multiplier speed, to be proportional to mob speed
 	vehicle_move_multiplier = CONFIG_GET(number/movedelay/run_delay) / 1.5
+
+/datum/component/riding/proc/update_movespeed()
+	var/atom/movable/AM = parent
+	AM.step_size = CEILING(initial(AM.step_size) / max(1, vehicle_move_delay), 1)
+	AM.maxspeed = AM.step_size
 
 /datum/component/riding/proc/vehicle_mob_unbuckle(datum/source, mob/living/M, force = FALSE)
 	SIGNAL_HANDLER
@@ -51,8 +56,6 @@
 	SIGNAL_HANDLER
 
 	var/atom/movable/movable_parent = parent
-	M.set_glide_size(movable_parent.glide_size)
-	M.updating_glide_size = FALSE
 	handle_vehicle_offsets(movable_parent.dir)
 
 /datum/component/riding/proc/handle_vehicle_layer(dir)
@@ -74,11 +77,8 @@
 	var/atom/movable/movable_parent = parent
 	if (isnull(dir))
 		dir = movable_parent.dir
-	movable_parent.set_glide_size(DELAY_TO_GLIDE_SIZE(vehicle_move_delay))
 	for (var/m in movable_parent.buckled_mobs)
 		ride_check(m)
-		var/mob/buckled_mob = m
-		buckled_mob.set_glide_size(movable_parent.glide_size)
 	handle_vehicle_offsets(dir)
 	handle_vehicle_layer(dir)
 
@@ -176,10 +176,6 @@
 		Unbuckle(user)
 		return
 
-	if(world.time < last_vehicle_move + ((last_move_diagonal? sqrt(2) : 1) * vehicle_move_delay * vehicle_move_multiplier))
-		return
-	last_vehicle_move = world.time
-
 	if(emped && empable)
 		to_chat(user, "<span class='notice'>\The [AM]'s controls aren't responding!</span>")
 		return
@@ -194,17 +190,13 @@
 		if(!Process_Spacemove(direction) || !isturf(AM.loc))
 			return
 		if(!(direction & UP) && !(direction & DOWN))
-			step(AM, direction)
+			AM.setDir(direction)
+			AM.add_velocity(direction, AM.step_size)
+			user.step_size = AM.step_size
 		else if(ismob(AM))
 			var/mob/M = AM
 			var/old_dir = M.dir
 			M.zMove((direction & UP) ? UP : DOWN, feedback = TRUE, feedback_to = user)
-			M.setDir(old_dir)
-
-		if((direction & (direction - 1)) && (AM.loc == next))		//moved diagonally
-			last_move_diagonal = TRUE
-		else
-			last_move_diagonal = FALSE
 
 		handle_vehicle_layer(AM.dir)
 		handle_vehicle_offsets(AM.dir)
@@ -222,9 +214,11 @@
 	if(M.usable_legs < 2 && !slowed)
 		vehicle_move_delay = vehicle_move_delay + slowvalue
 		slowed = TRUE
+		update_movespeed()
 	else if(slowed)
 		vehicle_move_delay = vehicle_move_delay - slowvalue
 		slowed = FALSE
+		update_movespeed()
 
 ///////Yes, I said humans. No, this won't end well...//////////
 /datum/component/riding/human
