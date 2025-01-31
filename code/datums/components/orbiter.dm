@@ -102,7 +102,7 @@
 		var/mob/M = orbiter
 		M.client.eye = parent
 
-	to_chat(orbiter, "<span class='notice'>Now orbiting [parent].</span>")
+	to_chat(orbiter, span_notice("Now orbiting [parent]."))
 
 /datum/component/orbiter/proc/end_orbit(atom/movable/orbiter, refreshing=FALSE)
 	if(!current_orbiters[orbiter])
@@ -161,13 +161,13 @@
 	if(!newturf)
 		qdel(src)
 
-	var/atom/curloc = master.loc
+	var/atom/current_location = master.loc
 	for(var/atom/movable/movable_orbiter as anything in current_orbiters)
 		if(QDELETED(movable_orbiter))
 			continue
 		movable_orbiter.abstract_move(newturf)
 		movable_orbiter.forceStep(master)
-		if(CHECK_TICK && master.loc != curloc)
+		if(CHECK_TICK && master.loc != current_location)
 			// We moved again during the checktick, cancel current operation
 			break
 
