@@ -19,8 +19,8 @@
 
 /obj/item/stack/ore/bluespace_crystal/Initialize(mapload)
 	. = ..()
-	pixel_x = rand(-5, 5)
-	pixel_y = rand(-5, 5)
+	if(loc)
+		forceMove(loc, rand(-5, 5), rand(-5, 5))
 
 /obj/item/stack/ore/bluespace_crystal/update_icon()
 	if(amount <= (max_amount * (1/3)))

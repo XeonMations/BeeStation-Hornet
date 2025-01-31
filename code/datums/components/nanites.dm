@@ -220,7 +220,7 @@
 			else
 				host_mob.visible_message("<span class='warning'>A metallic grey slurry bursts out of [host_mob]'s skin!</span>", "<span class='userdanger'>A metallic grey slurry violently bursts out of your skin!</span>");
 				if(isturf(host_mob.drop_location()[1]))
-					var/turf/T = host_mob.drop_location()
+					var/turf/T = host_mob.drop_location()[1]
 					T.add_vomit_floor(host_mob, VOMIT_NANITE, FALSE)
 		if((NANITE_EXCESS_BURST + 0.1) to INFINITY) //Way too many nanites, they just leave through the closest exit before they harm/poison the host
 			host_mob.visible_message("<span class='warning'>A torrent of metallic grey slurry violently bursts out of [host_mob]'s face and floods out of [host_mob.p_their()] skin!</span>",
@@ -237,7 +237,7 @@
 
 			//nanites everywhere
 			if(isturf(host_mob.drop_location()[1]))
-				var/turf/T = host_mob.drop_location()
+				var/turf/T = host_mob.drop_location()[1]
 				T.add_vomit_floor(host_mob, VOMIT_NANITE, FALSE)
 				for(var/turf/adjacent_turf in oview(host_mob, 1))
 					if(adjacent_turf.density || !adjacent_turf.Adjacent(T))

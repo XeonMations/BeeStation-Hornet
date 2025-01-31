@@ -11,6 +11,10 @@
 	throwforce = 12
 	throw_speed = 2
 	throw_range = 7
+	bound_x = 7
+	bound_width = 20
+	bound_y = 10
+	bound_height = 12
 	w_class = WEIGHT_CLASS_BULKY
 	item_flags = ISWEAPON
 	attack_verb_continuous = list("robusts")

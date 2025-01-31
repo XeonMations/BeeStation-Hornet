@@ -102,16 +102,16 @@
 
 		switch(target_step["action"])
 			if(ITEM_DELETE)
-				new target_step_key(drop_location())
+				new target_step_key(drop_location()[1])
 
 			if(ITEM_MOVE_INSIDE)
 				var/obj/item/located_item = locate(target_step_key) in parent
 				if(located_item)
-					located_item.forceMove(drop_location())
+					located_item.forceMove(drop_location()[1])
 
 			else
 				if(ispath(target_step_key, /obj/item/stack))
-					new target_step_key(drop_location(), target_step["amount"])
+					new target_step_key(drop_location()[1], target_step["amount"])
 		return TRUE
 	return FALSE
 
@@ -122,7 +122,7 @@
 		qdel(src)
 
 	else if(ispath(result, /atom))
-		new result(drop_location())
+		new result(drop_location()[1])
 		qdel(parent)
 
 /datum/component/construction/proc/update_parent(step_index)
@@ -135,9 +135,9 @@
 	if(step["icon_state"])
 		parent_atom.icon_state = step["icon_state"]
 
-/datum/component/construction/proc/drop_location()
+/datum/component/construction/proc/drop_location()[1]
 	var/atom/parent_atom = parent
-	return parent_atom.drop_location()
+	return parent_atom.drop_location()[1]
 
 
 

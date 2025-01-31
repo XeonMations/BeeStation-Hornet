@@ -347,8 +347,8 @@ CREATION_TEST_IGNORE_SUBTYPES(/obj/effect/temp_visual/heal)
 	if(set_color)
 		add_atom_colour(set_color, FIXED_COLOUR_PRIORITY)
 	. = ..()
-	pixel_x = rand(-12, 12)
-	pixel_y = rand(-9, 0)
+	if(loc)
+		forceMove(loc, rand(-12, 12), rand(-9, 0))
 
 /obj/effect/temp_visual/kinetic_blast
 	name = "kinetic explosion"

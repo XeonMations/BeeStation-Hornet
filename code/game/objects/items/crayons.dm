@@ -365,8 +365,7 @@
 			if(PAINT_NORMAL)
 				var/obj/effect/decal/cleanable/crayon/C = new(target, paint_color, drawing, temp, graf_rot)
 				C.add_hiddenprint(user)
-				C.pixel_x = clickx
-				C.pixel_y = clicky
+				C.forceMove(C.loc, clickx, clicky)
 				affected_turfs += target
 			if(PAINT_LARGE_HORIZONTAL)
 				var/turf/left = locate(target.x-1,target.y,target.z)

@@ -33,8 +33,8 @@ CREATION_TEST_IGNORE_SUBTYPES(/obj/item/stack/tile)
 
 /obj/item/stack/tile/Initialize(mapload, new_amount, merge = TRUE, mob/user = null)
 	. = ..()
-	pixel_x = rand(-3, 3)
-	pixel_y = rand(-3, 3) //randomize a little
+	if(loc)
+		forceMove(loc, rand(-3, 3), rand(-3, 3)) //randomize a little
 	if(tile_reskin_types)
 		tile_reskin_types = tile_reskin_list(tile_reskin_types)
 	if(tile_rotate_dirs)

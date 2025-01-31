@@ -57,6 +57,12 @@ GLOBAL_VAR_INIT(rpg_loot_items, FALSE)
 
 	max_integrity = 200
 
+	bound_height = 16 // assume all items are 16x16 centered at the center of a tile for throwing purposes
+	bound_width = 16
+	bound_x = 8
+	bound_y = 8
+	brotation = NONE
+
 	obj_flags = NONE
 
 	/// See _DEFINES/obj_flags.dm for a list of item flags
@@ -905,15 +911,14 @@ GLOBAL_VAR_INIT(rpg_loot_items, FALSE)
 		return
 	thrownby = WEAKREF(thrower)
 	callback = CALLBACK(src, PROC_REF(after_throw), callback) //replace their callback with our own
-	. = ..(target, range, speed, thrower, spin, diagonals_first, callback, force, quickstart = quickstart)
+	. = ..(target, range, speed, thrower, spin, diagonals_first, callback, force, quickstart = quickstart, params = params)
 
 /obj/item/proc/after_throw(datum/callback/callback)
 	if (callback) //call the original callback
 		. = callback.Invoke()
 	item_flags &= ~PICKED_UP
-	if(!pixel_y && !pixel_x && !(item_flags & NO_PIXEL_RANDOM_DROP))
-		pixel_x = rand(-8,8)
-		pixel_y = rand(-8,8)
+	if(loc && !step_y && !step_x && !(item_flags & NO_PIXEL_RANDOM_DROP))
+		forceMove(loc, rand(-8,8), rand(-8,8))
 
 /obj/item/proc/remove_item_from_storage(atom/newLoc) //please use this if you're going to snowflake an item out of a obj/item/storage
 	if(!newLoc)
@@ -1019,8 +1024,7 @@ GLOBAL_VAR_INIT(rpg_loot_items, FALSE)
 	if(!QDELETED(src))
 		var/turf/T = get_turf(src)
 		var/obj/effect/decal/cleanable/molten_object/MO = new(T)
-		MO.pixel_x = rand(-16,16)
-		MO.pixel_y = rand(-16,16)
+		MO.forceStep(null, step_x, step_y)
 		MO.desc = "Looks like this was \an [src] some time ago."
 		..()
 

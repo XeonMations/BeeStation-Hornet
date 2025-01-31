@@ -16,6 +16,10 @@
 	singular_name = "glass sheet"
 	icon_state = "sheet-glass"
 	item_state = "sheet-glass"
+	bound_height = 7
+	bound_width = 8
+	bound_x = 8
+	bound_y = 20
 	mats_per_unit = list(/datum/material/glass=MINERAL_MATERIAL_AMOUNT)
 	armor_type = /datum/armor/sheet_glass
 	resistance_flags = ACID_PROOF
@@ -273,14 +277,13 @@
 	icon_state = pick("large", "medium", "small")
 	switch(icon_state)
 		if("small")
-			pixel_x = rand(-12, 12)
-			pixel_y = rand(-12, 12)
+			forceStep(null, rand(-12, 12), rand(-12, 12))
 		if("medium")
-			pixel_x = rand(-8, 8)
-			pixel_y = rand(-8, 8)
+			forceStep(null, rand(-8, 8), rand(-8, 8))
 		if("large")
-			pixel_x = rand(-5, 5)
-			pixel_y = rand(-5, 5)
+			forceStep(null, rand(-5, 5), rand(-5, 5))
+	if(loc)
+		forceMove(loc)
 	if (icon_prefix)
 		icon_state = "[icon_prefix][icon_state]"
 	var/static/list/loc_connections = list(

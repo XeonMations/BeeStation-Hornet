@@ -21,5 +21,5 @@ CREATION_TEST_IGNORE_SUBTYPES(/obj/item/stack/sheet)
 
 /obj/item/stack/sheet/Initialize(mapload, new_amount, merge)
 	. = ..()
-	pixel_x = rand(-4, 4)
-	pixel_y = rand(-4, 4)
+	if(loc)
+		forceMove(loc, rand(-4, 4), rand(-4, 4))

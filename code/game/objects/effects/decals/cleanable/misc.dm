@@ -14,8 +14,8 @@
 /obj/effect/decal/cleanable/ash/Initialize(mapload)
 	. = ..()
 	reagents.add_reagent(/datum/reagent/ash, 30)
-	pixel_x = base_pixel_x + rand(-5, 5)
-	pixel_y = base_pixel_y + rand(-5, 5)
+	if(loc)
+		forceMove(loc, rand(-5, 5), rand(-5, 5))
 
 /obj/effect/decal/cleanable/ash/crematorium
 //crematoriums need their own ash cause default ash deletes itself if created in an obj
@@ -176,8 +176,8 @@ CREATION_TEST_IGNORE_SUBTYPES(/obj/effect/decal/cleanable/vomit/old)
 		qdel(src)
 
 /obj/effect/decal/cleanable/shreds/Initialize(mapload)
-	pixel_x = rand(-10, 10)
-	pixel_y = rand(-10, 10)
+	if(loc)
+		forceMove(loc, rand(-5, 5), rand(-5, 5))
 	. = ..()
 
 /obj/effect/decal/cleanable/glitter

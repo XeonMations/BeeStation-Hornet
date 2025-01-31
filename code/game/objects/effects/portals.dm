@@ -31,6 +31,8 @@
 	var/allow_anchored = FALSE
 	var/innate_accuracy_penalty = 0
 	var/last_effect = 0
+	var/last_bump = 0
+	var/cooldown = 1 SECONDS
 	// Are we currently being dispelled from a hand teleporter?
 	var/is_dispeling = FALSE
 
@@ -65,6 +67,10 @@
 		return TRUE
 
 /obj/effect/portal/Bumped(atom/movable/bumper)
+	if(world.time < last_bump + cooldown)
+		return ..()
+	last_bump = world.time
+	linked?.last_bump = world.time
 	teleport(bumper)
 
 /obj/effect/portal/newtonian_move(direction, instant = FALSE) // Prevents portals spawned by jaunter/handtele from floating into space when relocated to an adjacent tile.

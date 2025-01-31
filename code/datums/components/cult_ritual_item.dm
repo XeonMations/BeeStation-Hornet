@@ -180,7 +180,7 @@
 		"<span class='warning'>[cultist] strikes [cult_girder] with [parent]!</span>",
 		"<span class='notice'>You demolish [cult_girder].</span>"
 		)
-	new /obj/item/stack/sheet/runed_metal(cult_girder.drop_location(), 1)
+	new /obj/item/stack/sheet/runed_metal(cult_girder.drop_location()[1], 1)
 	qdel(cult_girder)
 
 /*

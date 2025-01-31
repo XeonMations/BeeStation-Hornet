@@ -185,6 +185,17 @@ CREATION_TEST_IGNORE_SELF(/mob/living/carbon)
 		newtonian_move(get_dir(target, src))
 		thrown_thing.safe_throw_at(target, thrown_thing.throw_range, thrown_thing.throw_speed, src, null, null, null, move_force)
 		return TRUE
+
+	var/_step_x
+	var/_step_y
+	if(user && (user.step_x || user.step_y))
+		if(user.dir == NORTH)
+			_step_x = user.step_x
+			_step_y = user.step_y - 16
+		else
+			_step_x = user.step_x
+			_step_y = user.step_y
+	forceStep(null, _step_x, _step_y)
 	return FALSE
 
 /mob/living/carbon/proc/canBeHandcuffed()

@@ -4,6 +4,8 @@
 	icon = 'icons/obj/chempuff.dmi'
 	pass_flags = PASSTABLE | PASSGRILLE
 	layer = FLY_LAYER
+	step_size = 32
+	glide_size = 32
 	///The mob who sourced this puff, if one exists
 	var/mob/user
 	///The sprayer who fired this puff

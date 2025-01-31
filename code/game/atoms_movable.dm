@@ -658,13 +658,13 @@
 	SHOULD_CALL_PARENT(TRUE)
 	SEND_SIGNAL(src, COMSIG_MOVABLE_MOVED, old_loc, movement_dir, forced, old_locs)
 
-	if(OldLoc == loc)
+	if(old_loc == loc)
 		var/turf/old_turf = get_turf(old_loc)
 		var/turf/new_turf = get_turf(src)
 		if(old_turf && new_turf && old_turf.z != new_turf.z)
 			onTransitZ(old_turf.z, new_turf.z)
 	else
-		SEND_SIGNAL(src, COMSIG_MOVABLE_MOVED_TURF, OldLoc, Dir)
+		SEND_SIGNAL(src, COMSIG_MOVABLE_MOVED_TURF, old_loc, movement_dir)
 	if (!inertia_moving)
 		newtonian_move(movement_dir)
 
@@ -844,7 +844,7 @@
 
 /atom/movable/proc/doMove(atom/destination, _step_x=0, _step_y=0)
 	. = FALSE
-		if(destination == loc) // Force move in place?
+	if(destination == loc) // Force move in place?
 		Moved(loc, NONE, TRUE)
 		return TRUE
 
